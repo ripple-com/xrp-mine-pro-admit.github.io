@@ -315,6 +315,7 @@
         <a href="#"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="#user-list-section"><i class="fas fa-users"></i> Users</a>
         <a href="#withdrawal-section"><i class="fas fa-money-check-alt"></i> Withdrawals</a>
+        <a href="#register-user-section"><i class="fas fa-user-plus"></i> Register New User</a>
         <a href="#"><i class="fas fa-cogs"></i> Settings</a>
         <a href="#" class="logout-link" id="logout-btn-sidenav"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
@@ -344,7 +345,28 @@
                 <p id="total-revenue" class="loading-skeleton"></p>
             </div>
         </div>
-
+        
+        <h2 id="register-user-section"><i class="fas fa-user-plus"></i> Register New User</h2>
+        <div class="stat-card" style="padding: 30px;">
+            <form id="register-user-form">
+                <div style="margin-bottom: 20px;">
+                    <label for="reg-email" style="display: block; margin-bottom: 5px; font-weight: 600;">Email Address:</label>
+                    <input type="email" id="reg-email" required 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); background-color: #242424; color: var(--text-color); border-radius: 6px;" 
+                           placeholder="user@example.com">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label for="reg-password" style="display: block; margin-bottom: 5px; font-weight: 600;">Password (Min 6 Chars):</label>
+                    <input type="password" id="reg-password" required minlength="6"
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); background-color: #242424; color: var(--text-color); border-radius: 6px;" 
+                           placeholder="Strong Password">
+                </div>
+                <button type="submit" id="register-submit-btn" class="action-btn approve-btn" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i> Register User
+                </button>
+            </form>
+            <p id="reg-message" style="margin-top: 15px; font-style: italic;"></p>
+        </div>
         <h2 id="withdrawal-section"><i class="fas fa-money-check-alt"></i> Pending Withdrawal Requests</h2>
         <div class="table-responsive">
             <table class="data-table">
@@ -660,6 +682,50 @@
                 alert(`Failed to delete user: ` + error.message);
             }
         }
+
+        // 7. NEW: User Registration Functionality
+        document.getElementById('register-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const messageEl = document.getElementById('reg-message');
+            const submitBtn = document.getElementById('register-submit-btn');
+
+            messageEl.textContent = 'Registering user...';
+            messageEl.style.color = 'var(--primary-color)';
+            submitBtn.disabled = true;
+
+            try {
+                // 1. Firebase Auth හරහා නව User කෙනෙක් නිර්මාණය කිරීම
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // 2. Firestore හි 'users' Collection එකට Entry එකක් එක් කිරීම
+                await db.collection('users').doc(user.uid).set({
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    balance: 0,
+                    currentPlan: 'Free', // Default plan
+                    disabled: false
+                });
+
+                messageEl.textContent = `Success! User ${email} registered with ID: ${user.uid.substring(0, 8)}...`;
+                messageEl.style.color = 'var(--success-color)';
+                
+                // Form එක clear කිරීම
+                document.getElementById('register-user-form').reset();
+                
+                // Dashboard දත්ත නැවත Load කිරීම (නව User කෙනෙක් එකතු වූ නිසා)
+                loadDashboardData();
+
+            } catch (error) {
+                console.error("Error registering new user:", error);
+                messageEl.textContent = `Registration Failed: ${error.message}`;
+                messageEl.style.color = 'var(--danger-color)';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
 
     </script>
 
