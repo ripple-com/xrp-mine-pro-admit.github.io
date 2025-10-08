@@ -5,34 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - XRP Mine Pro</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
         /* Shared Styles */
         :root {
-            --admin-color: #f44336; /* Red for Admin */
-            --card-bg: #212121; 
-            --bg-color: #121212;
-            --text-color: #eeeeee;
-            --primary-color: #03a9f4;
-            --success-color: #4CAF50;
-            --danger-color: #f44336;
+            --admin-color: #f44336;       /* Red for Admin (Accent) */
+            --card-bg: #1c1c1c;           /* Dark Card Background */
+            --bg-color: #121212;          /* Very Dark Body Background */
+            --text-color: #f0f0f0;        /* Light Text */
+            --primary-color: #03a9f4;     /* XRP Blue/Primary Accent */
+            --secondary-color: #e0e0e0;   /* Secondary Text */
+            --success-color: #4CAF50;     /* Green */
+            --danger-color: #f44336;      /* Red */
+            --border-color: #333;         /* Subtle Border */
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
-            padding-right: 0;
             transition: padding-right 0.3s;
         }
 
         .header {
-            background-color: var(--admin-color);
+            background-color: var(--card-bg); /* Dark header */
+            border-bottom: 3px solid var(--primary-color);
             color: white;
             padding: 15px 30px;
             display: flex;
@@ -41,14 +43,16 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
         }
 
         .header h1 {
             margin: 0;
             font-size: 24px;
+            font-weight: 700;
         }
-
-        /* --- නව සයිඩ් මෙනු CSS --- */
+        
+        /* --- Side Menu CSS --- */
         .sidenav {
             height: 100%;
             width: 0;
@@ -56,51 +60,48 @@
             z-index: 1001;
             top: 0;
             right: 0;
-            background-color: var(--card-bg);
+            background-color: #2a2a2a; /* Slightly lighter than card-bg */
             overflow-x: hidden;
             transition: 0.3s;
             padding-top: 60px;
-            box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+            box-shadow: -8px 0 20px rgba(0, 0, 0, 0.7);
         }
 
         .sidenav a {
-            padding: 15px 25px;
+            padding: 18px 25px;
             text-decoration: none;
-            font-size: 18px;
-            color: var(--text-color);
+            font-size: 17px;
+            color: var(--secondary-color);
             display: block;
-            transition: 0.2s;
+            transition: 0.3s;
             font-weight: 600;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #3d3d3d;
         }
 
         .sidenav a:hover {
-            background-color: #333;
+            background-color: #3d3d3d;
             color: var(--primary-color);
         }
         
         .sidenav a i {
-            margin-right: 10px;
+            margin-right: 15px;
             color: var(--admin-color);
         }
         
-        /* Menu Open Button (Hamburger Icon) */
         .menu-btn {
             background-color: transparent;
             color: white;
             border: none;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
-            transition: color 0.3s;
+            transition: color 0.3s, transform 0.3s;
         }
 
         .menu-btn:hover {
             color: var(--primary-color);
+            transform: rotate(90deg);
         }
         
-        /* Logout බොත්තම සයිඩ් මෙනුවට එක් කිරීම */
         .sidenav .logout-link {
             position: absolute;
             bottom: 0;
@@ -114,89 +115,133 @@
             background-color: #ff3333;
         }
 
-        /* --- මුල් CSS දිගටම --- */
+        /* --- Main Content --- */
 
         .container {
             padding: 30px;
-            max-width: 1200px;
+            max-width: 1300px;
             margin: auto;
         }
 
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
         .stat-card {
             background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
 
         .stat-card h3 {
             margin-top: 0;
-            color: var(--admin-color);
+            font-size: 16px;
+            color: var(--secondary-color);
+            font-weight: 600;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-card h3 i {
+            margin-right: 10px;
+            color: var(--primary-color);
         }
 
         .stat-card p {
-            font-size: 30px;
+            font-size: 36px;
             font-weight: 800;
             margin: 10px 0 0 0;
+            color: var(--text-color);
+        }
+        
+        /* Loading Skeleton Effect */
+        .stat-card p.loading-skeleton {
+            background-color: #333;
+            height: 36px;
+            width: 70%;
+            border-radius: 4px;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
         }
 
         h2 {
-            border-bottom: 2px solid var(--border-color, #333);
-            padding-bottom: 10px;
-            margin-top: 40px;
-            color: var(--primary-color);
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+            padding-bottom: 5px;
+            margin-top: 50px;
+            color: var(--text-color);
+            font-weight: 700;
         }
         
-        /* වගු තිරස් අතට අනුචලනය කිරීම සඳහා div */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
         .data-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
+            border-collapse: separate; /* for rounded corners */
+            border-spacing: 0;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden; /* prevents inner content from bleeding */
         }
 
         .data-table th, .data-table td {
-            padding: 12px 15px;
+            padding: 15px;
             text-align: left;
-            border-bottom: 1px solid var(--border-color, #333);
+            border-bottom: 1px solid #2a2a2a;
         }
 
         .data-table th {
-            background-color: #333;
-            color: #ccc;
+            background-color: #2a2a2a;
+            color: var(--primary-color);
             font-weight: 700;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table td {
+            background-color: var(--card-bg);
+            color: var(--secondary-color);
+            font-size: 14px;
         }
 
-        .data-table tr:hover {
-            background-color: #2a2a2a;
+        .data-table tr:hover td {
+            background-color: #242424;
         }
         
         /* Action Buttons */
         .action-btn {
-            padding: 5px 10px;
+            padding: 8px 12px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            margin-right: 5px;
-            margin-bottom: 5px; /* බොත්තම් අතර ඉඩ ලබා දීම */
-            transition: opacity 0.3s;
+            margin-right: 8px;
+            margin-bottom: 8px; 
+            transition: background-color 0.3s, transform 0.3s;
         }
 
         .action-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            opacity: 0.9;
         }
 
         .approve-btn {
@@ -209,74 +254,56 @@
             color: white;
         }
         
+        .loading-text {
+            color: var(--primary-color);
+            font-style: italic;
+        }
+        
         /* ---------------------------------- */
-        /* --- Responsive Styles (Media Queries) --- */
+        /* --- Responsive Styles --- */
         /* ---------------------------------- */
         
+        @media (max-width: 1024px) {
+            .card-grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+        }
+        
         @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
             
-            /* Header එක කුඩා කිරීම */
             .header {
                 padding: 15px 20px;
             }
 
-            .header h1 {
-                font-size: 20px;
-            }
-
-            /* Container Padding එක අඩු කිරීම */
-            .container {
-                padding: 15px;
-            }
-
-            /* Stat Cards: කුඩා තිරවල තීරු 2ක් පෙන්වීම */
             .card-grid {
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
                 gap: 15px;
             }
-
-            .stat-card p {
-                font-size: 24px; /* අංක ටිකක් කුඩා කිරීම */
-            }
             
-            h2 {
-                font-size: 20px;
-                margin-top: 30px;
+            .stat-card p {
+                font-size: 28px;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
             }
 
             .data-table {
-                min-width: 700px; /* වගුවට අවම පළලක් ලබා දීම, scroll වීමට */
+                min-width: 800px; 
             }
 
             .data-table th, .data-table td {
-                padding: 10px; /* cell padding අඩු කිරීම */
-                font-size: 14px;
+                padding: 10px;
+                font-size: 13px;
             }
             
-            /* Action buttons කුඩා කිරීම */
             .action-btn {
-                padding: 4px 8px;
+                padding: 6px 10px;
                 font-size: 12px;
-                margin-right: 2px;
-                display: block; /* කුඩා තිර වලදී එක යට එක පෙන්වීමට */
-                width: 100%;
-                box-sizing: border-box;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            
-            /* Stat Cards: ඉතා කුඩා තිරවල තීරු 1ක් පෙන්වීම */
-            .card-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stat-card {
-                text-align: center; /* Card අන්තර්ගතය මැදට ගැනීම */
-            }
-            
-            .menu-btn {
-                font-size: 20px; /* Hamburger icon එක කුඩා කිරීම */
+                margin-right: 4px;
             }
         }
     </style>
@@ -293,7 +320,7 @@
     </div>
 
     <div class="header">
-        <h1><i class="fas fa-lock"></i> Admin Dashboard</h1>
+        <h1><i class="fas fa-lock" style="color: var(--admin-color);"></i> Admin Dashboard</h1>
         <button class="menu-btn" onclick="openNav()"><i class="fas fa-bars"></i></button>
     </div>
 
@@ -301,20 +328,20 @@
         
         <div class="card-grid">
             <div class="stat-card">
-                <h3>Total Users</h3>
-                <p id="total-users">0</p>
+                <h3><i class="fas fa-users"></i> Total Users</h3>
+                <p id="total-users" class="loading-skeleton"></p>
             </div>
             <div class="stat-card">
-                <h3>Pending Withdrawals</h3>
-                <p id="pending-withdrawals">0</p>
+                <h3><i class="fas fa-hourglass-half"></i> Pending Withdrawals</h3>
+                <p id="pending-withdrawals" class="loading-skeleton"></p>
             </div>
             <div class="stat-card">
-                <h3>Active Plans</h3>
-                <p id="active-plans">0</p>
+                <h3><i class="fas fa-rocket"></i> Active Plans</h3>
+                <p id="active-plans" class="loading-skeleton"></p>
             </div>
             <div class="stat-card">
-                <h3>Total Revenue (Est.)</h3>
-                <p id="total-revenue">$0.00</p>
+                <h3><i class="fas fa-dollar-sign"></i> Total Revenue (Est.)</h3>
+                <p id="total-revenue" class="loading-skeleton"></p>
             </div>
         </div>
 
@@ -331,7 +358,7 @@
                     </tr>
                 </thead>
                 <tbody id="withdrawal-list">
-                    <tr><td colspan="5" style="text-align: center;">Loading requests...</td></tr>
+                    <tr><td colspan="5" style="text-align: center;" class="loading-text">Loading requests...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -346,10 +373,13 @@
                         <th>Current Plan</th>
                         <th>Balance (XRP)</th>
                         <th>Referred By</th>
-                        <th>Account Status</th>  <th>Admin Actions</th>    </tr>
+                        <th>Account Status</th>
+                        <th>Admin Actions</th>
+                    </tr>
                 </thead>
                 <tbody id="user-list">
-                    <tr><td colspan="7" style="text-align: center;">Loading users...</td></tr> </tbody>
+                    <tr><td colspan="7" style="text-align: center;" class="loading-text">Loading users...</td></tr>
+                </tbody>
             </table>
         </div>
 
@@ -375,7 +405,7 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- නව සයිඩ් මෙනු JavaScript ---
+        // --- Side Menu JavaScript ---
         function openNav() {
           document.getElementById("mySidenav").style.width = "250px";
         }
@@ -387,7 +417,8 @@
         // 2. Auth Guard: Admin Check
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
-                window.location.href = 'admin_login.html';
+                // Redirect to login page
+                window.location.href = 'admin_login.html'; 
                 return;
             }
 
@@ -405,7 +436,7 @@
             loadDashboardData();
         });
 
-        // 3. Logout Functionality (සයිඩ් මෙනුවේ ඇති බොත්තම සඳහා)
+        // 3. Logout Functionality
         document.getElementById('logout-btn-sidenav').addEventListener('click', async (e) => {
             e.preventDefault(); 
             await auth.signOut();
@@ -414,16 +445,31 @@
 
         // 4. Main Data Loading Function
         async function loadDashboardData() {
+            // Loading skeleton effects
+            document.getElementById('total-users').className = 'loading-skeleton';
+            document.getElementById('pending-withdrawals').className = 'loading-skeleton';
+            document.getElementById('active-plans').className = 'loading-skeleton';
+            document.getElementById('total-revenue').className = 'loading-skeleton';
+            
+            document.getElementById('user-list').innerHTML = '<tr><td colspan="7" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
+            document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="5" style="text-align: center;" class="loading-text">Loading requests...</td></tr>';
+
+
             try {
                 // --- A. Load User Data ---
                 const usersSnapshot = await db.collection('users').get();
-                // 'disabled' ක්ෂේත්‍රය නැතිනම් false ලෙස සලකා ඇත
                 const users = usersSnapshot.docs.map(doc => ({ id: doc.id, disabled: doc.data().disabled || false, ...doc.data() }));
                 
                 // Update Stats
                 document.getElementById('total-users').textContent = users.length;
+                document.getElementById('total-users').className = ''; // Remove skeleton
                 const activePlans = users.filter(u => u.currentPlan && u.currentPlan !== 'Free').length;
                 document.getElementById('active-plans').textContent = activePlans;
+                document.getElementById('active-plans').className = ''; // Remove skeleton
+                
+                // Temporary static revenue data (Update based on your real logic)
+                document.getElementById('total-revenue').textContent = '$' + (users.length * 5).toFixed(2);
+                document.getElementById('total-revenue').className = ''; // Remove skeleton
                 
                 // Populate User List Table
                 const userListTable = document.getElementById('user-list');
@@ -468,6 +514,7 @@
                 
                 // Update Stats
                 document.getElementById('pending-withdrawals').textContent = requests.length;
+                document.getElementById('pending-withdrawals').className = ''; // Remove skeleton
 
                 // Populate Withdrawal List Table
                 const withdrawalListTable = document.getElementById('withdrawal-list');
@@ -484,8 +531,8 @@
                             <td>${request.address.substring(0, 10)}...</td>
                             <td>${request.tag || 'N/A'}</td>
                             <td>
-                                <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved')">Approve</button>
-                                <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected')">Reject</button>
+                                <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.userId || request.uid}', ${request.amount})">Approve</button>
+                                <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.userId || request.uid}', ${request.amount})">Reject</button>
                             </td>
                         `;
                     });
@@ -493,33 +540,56 @@
                 
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger-color);">Error loading users.</td></tr>`;
-                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Error loading requests.</td></tr>`;
+                document.getElementById('user-list').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
+                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`;
             }
         }
 
-        // 5. Withdrawal Handling Function
-        async function handleWithdrawal(requestId, action) {
+        // 5. Withdrawal Handling Function (Approved නම් Balance එක අඩු කිරීමට Logic එකතු කර ඇත)
+        async function handleWithdrawal(requestId, action, userId, amount) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
             }
             
             try {
-                // 1. Withdrawal request එකේ status යාවත්කාලීන කිරීම
-                await db.collection('withdrawal_requests').doc(requestId).update({
-                    status: action,
-                    adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
+                // Firestore Transaction භාවිතා කරමින් Withdrawal Approved කිරීම
+                await db.runTransaction(async (transaction) => {
+                    // 1. Withdrawal request එකේ status යාවත්කාලීන කිරීම
+                    const withdrawalRef = db.collection('withdrawal_requests').doc(requestId);
+                    transaction.update(withdrawalRef, {
+                        status: action,
+                        adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    if (action === 'Approved') {
+                        // 2. Approved නම්, user ගේ balance එක යාවත්කාලීන කිරීම
+                        const userRef = db.collection('users').doc(userId);
+                        const userDoc = await transaction.get(userRef);
+
+                        if (!userDoc.exists) {
+                            throw "User document does not exist!";
+                        }
+                        
+                        // නව balance එක ගණනය කිරීම
+                        const currentBalance = userDoc.data().balance || 0;
+                        const newBalance = currentBalance - amount;
+
+                        if (newBalance < 0) {
+                            // මෙය සිදුවිය යුතු නැත, නමුත් ආරක්ෂාවට පරීක්ෂා කිරීම
+                            throw "User has insufficient balance for this withdrawal!";
+                        }
+
+                        transaction.update(userRef, {
+                            balance: newBalance
+                        });
+
+                        alert(`Withdrawal Request ${requestId} has been ${action}. ${amount} XRP deducted from user balance. Please ensure the XRP transfer is completed manually.`);
+                    } else {
+                        // Reject වුවහොත්, user ගේ balance එකට කිසිවක් නොකරන්න.
+                        alert(`Withdrawal Request ${requestId} has been ${action}.`);
+                    }
                 });
-                
-                // 2. Approved නම්, user ගේ balance එක යාවත්කාලීන කිරීම
-                if (action === 'Approved') {
-                    // ⚠️ මෙහිදී ගනුදෙනුවට අදාළ XRP ප්‍රමාණය user ගේ 'balance' එකෙන් අඩු කළ යුතුය. 
-                    // (මෙම logic එක සංකීර්ණ බැවින්, එය ඔබගේ ව්‍යාපාරික අවශ්‍යතා අනුව සකස් කළ යුතුය.)
-                    
-                    alert(`Withdrawal Request ${requestId} has been ${action}. Please ensure the XRP transfer is completed manually.`);
-                } else {
-                    alert(`Withdrawal Request ${requestId} has been ${action}.`);
-                }
+
 
                 // 3. ඩෑෂ්බෝඩ් එක නැවත Load කිරීම
                 loadDashboardData();
@@ -545,7 +615,7 @@
                     disabled: disableState === 'true' // Boolean අගයක් යැවීම
                 });
                 
-                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore. \n\nIMPORTANT: User must check for the 'disabled' field when logging in to fully restrict access.`);
+                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore. (NOTE: Full Auth disable requires backend).`);
                 
                 loadDashboardData();
             } catch (error) {
@@ -582,7 +652,7 @@
                 await db.collection('users').doc(userId).delete();
                 
                 // ⚠️ ගිණුම සම්පූර්ණයෙන්ම මකා දැමීමට Cloud Functions (Backend) අවශ්‍ය වේ.
-                alert(`User ${userEmail} Firestore data has been deleted. \n\nIMPORTANT: To fully delete the user from Firebase Authentication, you must use the Firebase Console or a Backend Function.`);
+                alert(`User ${userEmail} Firestore data has been deleted. (NOTE: Full Auth deletion requires backend).`);
                 
                 loadDashboardData();
             } catch (error) {
