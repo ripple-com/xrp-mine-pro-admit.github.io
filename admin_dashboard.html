@@ -27,8 +27,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
-            /* Side menu සඳහා දකුණට padding එකක් එකතු කිරීම */
-            padding-right: 0; /* මූලික වශයෙන් 0, මෙනුව විවෘත වූ විට වෙනස් වේ */
+            padding-right: 0;
             transition: padding-right 0.3s;
         }
 
@@ -39,7 +38,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky; /* ස්ථාවර header එකක් සඳහා */
+            position: sticky;
             top: 0;
             z-index: 1000;
         }
@@ -52,12 +51,12 @@
         /* --- නව සයිඩ් මෙනු CSS --- */
         .sidenav {
             height: 100%;
-            width: 0; /* මූලික වශයෙන් වසා ඇත */
+            width: 0;
             position: fixed;
             z-index: 1001;
             top: 0;
             right: 0;
-            background-color: var(--card-bg); /* පසුබිම් වර්ණය */
+            background-color: var(--card-bg);
             overflow-x: hidden;
             transition: 0.3s;
             padding-top: 60px;
@@ -154,6 +153,12 @@
             margin-top: 40px;
             color: var(--primary-color);
         }
+        
+        /* වගු තිරස් අතට අනුචලනය කිරීම සඳහා div */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
         .data-table {
             width: 100%;
@@ -202,6 +207,74 @@
             background-color: var(--danger-color);
             color: white;
         }
+        
+        /* ---------------------------------- */
+        /* --- Responsive Styles (Media Queries) --- */
+        /* ---------------------------------- */
+        
+        @media (max-width: 768px) {
+            
+            /* Header එක කුඩා කිරීම */
+            .header {
+                padding: 15px 20px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            /* Container Padding එක අඩු කිරීම */
+            .container {
+                padding: 15px;
+            }
+
+            /* Stat Cards: කුඩා තිරවල තීරු 2ක් පෙන්වීම */
+            .card-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 15px;
+            }
+
+            .stat-card p {
+                font-size: 24px; /* අංක ටිකක් කුඩා කිරීම */
+            }
+            
+            h2 {
+                font-size: 20px;
+                margin-top: 30px;
+            }
+
+            .data-table {
+                min-width: 600px; /* වගුවට අවම පළලක් ලබා දීම, scroll වීමට */
+            }
+
+            .data-table th, .data-table td {
+                padding: 10px; /* cell padding අඩු කිරීම */
+                font-size: 14px;
+            }
+            
+            /* Action buttons කුඩා කිරීම */
+            .action-btn {
+                padding: 4px 8px;
+                font-size: 12px;
+                margin-right: 2px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            
+            /* Stat Cards: ඉතා කුඩා තිරවල තීරු 1ක් පෙන්වීම */
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-card {
+                text-align: center; /* Card අන්තර්ගතය මැදට ගැනීම */
+            }
+            
+            .menu-btn {
+                font-size: 20px; /* Hamburger icon එක කුඩා කිරීම */
+            }
+        }
     </style>
 </head>
 <body>
@@ -242,36 +315,40 @@
         </div>
 
         <h2 id="withdrawal-section"><i class="fas fa-money-check-alt"></i> Pending Withdrawal Requests</h2>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>XRP Amount</th>
-                    <th>Wallet Address</th>
-                    <th>Destination Tag</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="withdrawal-list">
-                <tr><td colspan="5" style="text-align: center;">Loading requests...</td></tr>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>XRP Amount</th>
+                        <th>Wallet Address</th>
+                        <th>Destination Tag</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawal-list">
+                    <tr><td colspan="5" style="text-align: center;">Loading requests...</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <h2 id="user-list-section"><i class="fas fa-users"></i> All Users</h2>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>UID</th>
-                    <th>Current Plan</th>
-                    <th>Balance (XRP)</th>
-                    <th>Referred By</th>
-                </tr>
-            </thead>
-            <tbody id="user-list">
-                <tr><td colspan="5" style="text-align: center;">Loading users...</td></tr>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>UID</th>
+                        <th>Current Plan</th>
+                        <th>Balance (XRP)</th>
+                        <th>Referred By</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list">
+                    <tr><td colspan="5" style="text-align: center;">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
 
     </div>
     
