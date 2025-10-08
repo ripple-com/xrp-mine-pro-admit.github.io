@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
-        /* Shared Styles (ඔබගේ මූලික CSS මෙහිදී භාවිතා කර ඇත) */
+        /* Shared Styles */
         :root {
             --admin-color: #f44336;       
             --card-bg: #1c1c1c;           
@@ -230,8 +230,8 @@
             margin-right: 8px;
             margin-bottom: 8px; 
             transition: background-color 0.3s, transform 0.3s;
-            white-space: nowrap; /* බොත්තම් එක පේලියක තබා ගැනීමට */
-            font-size: 13px; /* කුඩා කරන ලදී */
+            white-space: nowrap; 
+            font-size: 13px; 
         }
         
         .edit-btn {
@@ -351,7 +351,7 @@
                 overflow-x: auto;
             }
             .data-table {
-                min-width: 1000px; /* වැඩි කරන ලදී */
+                min-width: 1000px; 
             }
             .data-table th, .data-table td {
                 padding: 8px;
@@ -422,7 +422,7 @@
         
         <div class="card-grid">
             <div class="stat-card">
-                <h3><i class="fas fa-users"></i> Total Users</h3>
+                <h3><i class="fas fa-users"></i> Total User</h3>
                 <p id="total-users" class="loading-skeleton"></p>
             </div>
              <div class="stat-card">
@@ -434,7 +434,7 @@
                 <p id="active-plans" class="loading-skeleton"></p>
             </div>
             <div class="stat-card">
-                <h3><i class="fas fa-hourglass-half"></i> Pending Withdrawals</h3>
+                <h3><i class="fas fa-hourglass-half"></i> Pending Withdrawal</h3>
                 <p id="pending-withdrawals" class="loading-skeleton"></p>
             </div>
         </div>
@@ -468,14 +468,13 @@
                     <tr>
                         <th>Email</th>
                         <th>XRP Amount</th>
-                        <th>Wallet Address</th>
+                        <th>Request Date/Time</th> <th>Wallet Address</th>
                         <th>Destination Tag</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="withdrawal-list">
-                    <tr><td colspan="5" style="text-align: center;" class="loading-text">Loading requests...</td></tr>
-                </tbody>
+                    <tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr> </tbody>
             </table>
         </div>
 
@@ -506,14 +505,14 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     
     <script>
-        // ⚠️ ඔබගේ Firebase Config
+        // ⚠️ ඔබගේ Firebase Config මෙහිදී යාවත්කාලීන කරන්න.
         const firebaseConfig = {
-            apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
-            authDomain: "xrp-mine-pro.firebaseapp.com",
-            projectId: "xrp-mine-pro",
-            storageBucket: "xrp-mine-pro.appspot.com",
-            messagingSenderId: "424665736685",
-            appId: "1:424665736685:web:21ba6c17e4d395a72933e4"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
         
         // 1. Firebase Initialization
@@ -521,8 +520,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Admin Email Whitelist
-        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "your.admin@xrpminepro.com"]; 
+        // ⚠️ ඔබගේ පරිපාලක Email ලිපින මෙහි ඇතුළත් කරන්න.
+        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "your.second.admin@example.com"]; 
+        const ADMIN_LOGIN_PAGE = 'admin_login.html'; // Admin Login Page එකේ නම
 
         // --- Side Menu JavaScript ---
         function openNav() {
@@ -536,15 +536,15 @@
         // 2. Auth Guard: Admin Check
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
-                // Redirect to login page
-                window.location.href = 'admin_login.html'; 
+                // Login page වෙත යොමු කරන්න
+                window.location.href = ADMIN_LOGIN_PAGE; 
                 return;
             }
 
             if (!ALLOWED_ADMIN_EMAILS.includes(user.email)) {
                 alert("Access Denied. Not an authorized admin.");
                 await auth.signOut();
-                window.location.href = 'admin_login.html';
+                window.location.href = ADMIN_LOGIN_PAGE;
                 return;
             }
 
@@ -556,14 +556,14 @@
         document.getElementById('logout-btn-sidenav').addEventListener('click', async (e) => {
             e.preventDefault(); 
             await auth.signOut();
-            window.location.href = 'admin_login.html';
+            window.location.href = ADMIN_LOGIN_PAGE;
         });
         
-        // 4. Time Formatting Function
+        // 4. Time Formatting Function (වසර, දිනය, වෙලාව නිවැරදිව පෙන්වීමට)
         function formatFirebaseTimestamp(timestamp) {
             if (!timestamp || !timestamp.toDate) return 'N/A';
             const date = timestamp.toDate();
-            // Format: YYYY-MM-DD HH:MM:SS
+            // Format: YYYY/MM/DD, HH:MM:SS
             return date.toLocaleString('en-GB', { 
                 year: 'numeric', 
                 month: '2-digit', 
@@ -579,12 +579,12 @@
         async function loadDashboardData() {
             // Loading skeleton effects
             document.getElementById('total-users').className = 'loading-skeleton';
-            document.getElementById('total-hashrate').className = 'loading-skeleton'; // New
+            document.getElementById('total-hashrate').className = 'loading-skeleton'; 
             document.getElementById('pending-withdrawals').className = 'loading-skeleton';
             document.getElementById('active-plans').className = 'loading-skeleton';
             
             document.getElementById('user-list').innerHTML = '<tr><td colspan="7" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
-            document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="5" style="text-align: center;" class="loading-text">Loading requests...</td></tr>';
+            document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; // colspan 6
 
             try {
                 // --- A. Load User Data ---
@@ -592,17 +592,17 @@
                 const users = usersSnapshot.docs.map(doc => ({ 
                     id: doc.id, 
                     disabled: doc.data().disabled || false, 
-                    totalHashRate: doc.data().totalHashRate || 0, // නව ක්ෂේත්‍රය
+                    totalHashRate: doc.data().totalHashRate || 0, 
                     createdAt: doc.data().createdAt, 
                     ...doc.data() 
                 }));
                 
-                // Update Stats
+                // Update Dashboard Stats
                 document.getElementById('total-users').textContent = users.length;
                 document.getElementById('total-users').className = ''; 
                 
                 const totalHashRate = users.reduce((sum, user) => sum + (user.totalHashRate || 0), 0);
-                document.getElementById('total-hashrate').textContent = totalHashRate.toFixed(2); // නව Hash Rate Stat
+                document.getElementById('total-hashrate').textContent = totalHashRate.toFixed(2); 
                 document.getElementById('total-hashrate').className = ''; 
                 
                 const activePlans = users.filter(u => u.currentPlan && u.currentPlan !== 'Free').length;
@@ -649,11 +649,16 @@
                 }
 
 
-                // --- B. Load Withdrawal Requests (Previous implementation remains) ---
+                // --- B. Load Withdrawal Requests --- (නව කේතය)
                 const withdrawalSnapshot = await db.collection('withdrawal_requests')
-                                                   .where('status', '==', 'Pending')
+                                                   .where('status', '==', 'Pending') 
+                                                   .orderBy('createdAt', 'desc') // ඉල්ලීම කළ වේලාව අනුව අලුත්ම ඒවා මුලින්
                                                    .get();
-                const requests = withdrawalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const requests = withdrawalSnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    createdAt: doc.data().createdAt // createdAt Timestamp එක ලබා ගැනීම
+                }));
                 
                 document.getElementById('pending-withdrawals').textContent = requests.length;
                 document.getElementById('pending-withdrawals').className = ''; 
@@ -662,18 +667,21 @@
                 withdrawalListTable.innerHTML = ''; 
                 
                 if (requests.length === 0) {
-                    withdrawalListTable.innerHTML = '<tr><td colspan="5" style="text-align: center;">No pending withdrawal requests.</td></tr>';
+                    withdrawalListTable.innerHTML = '<tr><td colspan="6" style="text-align: center;">No pending withdrawal requests.</td></tr>';
                 } else {
                     requests.forEach(request => {
+                        // දිනය/වේලාව format කිරීම
+                        const requestDateTime = formatFirebaseTimestamp(request.createdAt); 
+                        
                         const row = withdrawalListTable.insertRow();
                         row.innerHTML = `
                             <td>${request.userEmail || 'N/A'}</td>
                             <td>${request.amount.toFixed(4)} XRP</td>
-                            <td>${request.address.substring(0, 10)}...</td>
+                            <td>${requestDateTime}</td> <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
                             <td>${request.tag || 'N/A'}</td>
                             <td>
-                                <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.userId || request.uid}', ${request.amount})">Approve</button>
-                                <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.userId || request.uid}', ${request.amount})">Reject</button>
+                                <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Approve</button>
+                                <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Reject</button>
                             </td>
                         `;
                     });
@@ -682,48 +690,70 @@
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
                 document.getElementById('user-list').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
-                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`;
+                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; // colspan 6
             }
         }
         
-        // 6. Withdrawal Handling Function (Same as before)
-        async function handleWithdrawal(requestId, action, userId, amount) {
-            // ... (Your existing handleWithdrawal function) ...
+        // 6. Withdrawal Handling Function (නව කේතය)
+        async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
             }
             
             try {
-                // Firestore Transaction
+                // Firestore Transaction එකක් භාවිතා කර දත්ත නිවැරදිව යාවත්කාලීන කරයි
                 await db.runTransaction(async (transaction) => {
                     const withdrawalRef = db.collection('withdrawal_requests').doc(requestId);
+                    
+                    // status එක 'Approved' නම් 'Completed' ලෙසත්, 'Rejected' නම් 'Cancelled' ලෙසත් යැවීම
+                    const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
+
+                    // 1. Withdrawal Request Status යාවත්කාලීන කිරීම
                     transaction.update(withdrawalRef, {
-                        status: action,
+                        status: transactionStatus, 
                         adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
+                    // 2. Transaction වාර්තාව එක් කිරීම (transactions.html සඳහා)
+                    const newTransactionRef = db.collection('transactions').doc();
+                    
+                    transaction.set(newTransactionRef, {
+                        uid: userId,
+                        type: 'Withdrawal',
+                        amount: amount,
+                        address: address,
+                        tag: tag,
+                        fee: 0.00, // ඔබට අවශ්‍ය නම් ගාස්තුව මෙහි වෙනස් කළ හැක
+                        status: transactionStatus, 
+                        userEmail: userEmail, 
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    
                     if (action === 'Approved') {
+                        // 3. පරිශීලකයාගේ ශේෂය යාවත්කාලීන කිරීම (Approved නම්)
                         const userRef = db.collection('users').doc(userId);
                         const userDoc = await transaction.get(userRef);
 
                         if (!userDoc.exists) {
-                            throw "User document does not exist!";
+                            throw new Error("User document does not exist!");
                         }
                         
                         const currentBalance = userDoc.data().balance || 0;
                         const newBalance = currentBalance - amount;
 
                         if (newBalance < 0) {
-                            throw "User has insufficient balance for this withdrawal!";
+                            // ගනුදෙනුව අවලංගු කිරීමට (rollback)
+                            throw new Error("User has insufficient balance for this withdrawal!"); 
                         }
 
                         transaction.update(userRef, {
                             balance: newBalance
                         });
 
-                        alert(`Withdrawal Request ${requestId} has been ${action}. ${amount} XRP deducted from user balance. Please ensure the XRP transfer is completed manually.`);
+                        alert(`Withdrawal Request ${requestId} has been Approved/Completed. ${amount} XRP deducted.`);
                     } else {
-                        alert(`Withdrawal Request ${requestId} has been ${action}.`);
+                        alert(`Withdrawal Request ${requestId} has been Rejected/Cancelled.`);
                     }
                 });
 
@@ -737,7 +767,7 @@
         
         // 7. User Management Functions
         
-        // 🚨 ඩිසෙබල් කිරීමට/Enable කිරීමට (Deactivate/Activate)
+        // 🚨 Account Disable/Enable (Deactivate/Activate)
         async function toggleDisableUser(userId, disableState) {
             const action = disableState === 'true' ? 'Disable' : 'Enable';
             if (!confirm(`Are you sure you want to ${action} account for user ${userId.substring(0, 8)}...?`)) {
@@ -749,7 +779,7 @@
                     disabled: disableState === 'true' 
                 });
                 
-                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore. (NOTE: Full Auth disable requires a backend/Cloud Function).`);
+                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore.`);
                 
                 loadDashboardData();
             } catch (error) {
@@ -758,13 +788,14 @@
             }
         }
 
-        // 🚨 Password Reset (Same as before)
+        // 🚨 Password Reset (Rest Password)
         async function resetPassword(userEmail) {
             if (!confirm(`Are you sure you want to send a password reset email to ${userEmail}?`)) {
                 return;
             }
 
             try {
+                // Firebase Auth සේවාව භාවිතා කරයි.
                 await auth.sendPasswordResetEmail(userEmail);
                 
                 alert(`Password reset email sent successfully to ${userEmail}.`);
@@ -774,16 +805,17 @@
             }
         }
 
-        // 🚨 User Delete (Same as before)
+        // 🚨 User Delete
         async function deleteUser(userId, userEmail) {
-            if (!confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the user ${userEmail} (${userId.substring(0, 8)}...) and all their data? THIS ACTION CANNOT BE UNDONE.`)) {
+            if (!confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the user ${userEmail} and all their data? THIS ACTION CANNOT BE UNDONE. (NOTE: Full Auth deletion requires a Cloud Function).`)) {
                 return;
             }
 
             try {
+                // Firestore User document එක මකා දමයි.
                 await db.collection('users').doc(userId).delete();
                 
-                alert(`User ${userEmail} Firestore data has been deleted. (NOTE: Full Auth deletion requires a backend/Cloud Function).`);
+                alert(`User ${userEmail} Firestore data has been deleted.`);
                 
                 loadDashboardData();
             } catch (error) {
@@ -792,10 +824,10 @@
             }
         }
 
-        // 8. NEW: Edit User Modal Functions
+        // 8. Edit User Modal Functions (Edit User Data)
         function openEditUserModal(userId, email, currentPlan, balance, totalHashRate) {
             document.getElementById('edit-user-id').value = userId;
-            document.getElementById('edit-email').value = email; // Disabled
+            document.getElementById('edit-email').value = email; 
             document.getElementById('edit-plan').value = currentPlan;
             document.getElementById('edit-balance').value = balance;
             document.getElementById('edit-hashrate').value = totalHashRate;
@@ -825,7 +857,6 @@
                 messageEl.textContent = 'User data successfully updated!';
                 messageEl.style.color = 'var(--success-color)';
                 
-                // Modal එක වැසීම සහ දත්ත නැවත Load කිරීම
                 setTimeout(() => {
                     document.getElementById('editUserModal').style.display = 'none';
                     loadDashboardData();
@@ -841,7 +872,7 @@
         });
 
 
-        // 9. NEW: User Registration Functionality (Refined)
+        // 9. User Registration Functionality (Add User)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('reg-email').value;
@@ -861,9 +892,6 @@
                  return;
             }
             
-            // ⚠️ Client-side එකේදී Admin කෙනෙකු ලියාපදිංචි කිරීමේදී මුරපදය යළි යෙදීම ආරක්ෂිත නොවේ.
-            // මෙම උදාහරණය සරල කරන ලදී.
-            
             try {
                 // 1. නව User කෙනෙක් නිර්මාණය කිරීම 
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -879,11 +907,10 @@
                     disabled: false
                 });
                 
-                // 3. Admin ගේ Session එක බලෙන් නැති කර යළි ලොග් වීමට ඉඩ නොදීම
-                // මෙය Firebase Auth හි සරල බවට කරන සුළු වෙනසකි. 
-                // සැබෑ පරිසරයකදී Cloud Functions භාවිතා කරන්න.
+                // 3. දැනට ලොග් වී සිටින Admin ගේ Session එක නැති නොකිරීමට, 
+                // මෙහිදී කිසිදු Auth Session වෙනසක් සිදු නොවේ.
                 
-                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website. Please RELOAD to ensure admin session is stable.`;
+                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website.`;
                 messageEl.style.color = 'var(--success-color)';
                 
                 // Form එක clear කිරීම
