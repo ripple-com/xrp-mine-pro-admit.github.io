@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Payments - Admin Panel</title>    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* ⚠️ admin_dashboard.html වෙතින් Common CSS Styles මෙහි පිටපත් කර අලවන්න */
+        :root {
+            --admin-color: #f44336; 
+            --card-bg: #212121; 
+            --bg-color: #121212;
+            --text-color: #eeeeee;
+            --sidebar-bg: #1a1a1a;
+            --approve-color: #4CAF50;
+            --reject-color: #f44336;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles (Copy from admin_dashboard.html) */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar h3 {color: var(--admin-color); text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px;}
+        .sidebar a {
+            display: block; color: var(--text-color); padding: 12px 15px; text-decoration: none; border-radius: 6px; margin-bottom: 10px; transition: background-color 0.3s, color 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--admin-color); color: white;
+        }
+        .sidebar a i {margin-right: 10px;}
+        .sidebar .logout-btn {background-color: #333; color: #ccc; margin-top: 30px;}
+        .sidebar .logout-btn:hover {background-color: #555; color: white;}
+        
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+        }
+        
+        /* Table Styles (Responsive) */
+        .table-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto; /* කුඩා තිරවලදී දකුණට Scroll කිරීමට */
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px; /* Table එකේ අවම පළල */
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .data-table th {
+            background-color: #333;
+            color: var(--admin-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .data-table tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+
+        .btn-approve {
+            background-color: var(--approve-color);
+            color: white;
+        }
+        .btn-reject {
+            background-color: var(--reject-color);
+            color: white;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .status-Pending { background-color: #ff980033; color: #ff9800; }
+        .status-Approved { background-color: #4CAF5033; color: #4CAF50; }
+        .status-Rejected { background-color: #f4433633; color: #f44336; }
+
+        /* Mobile Responsive Table (Data Labels) */
+        @media (max-width: 768px) {
+            .data-table, .data-table tbody, .data-table tr, .data-table td {
+                display: block; /* මේසය කොටස් වලට කැඩීම */
+            }
+
+            .data-table thead {
+                display: none; /* ශීර්ෂය සැඟවීම */
+            }
+
+            .data-table tr {
+                margin-bottom: 15px;
+                border: 1px solid #444;
+                border-radius: 8px;
+            }
+
+            .data-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+
+            .data-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 50%;
+                padding-left: 15px;
+                font-weight: 700;
+                text-align: left;
+                color: var(--admin-color);
+            }
+            
+            /* Sidebar and Menu Toggle (Copy from admin_dashboard.html changes) */
+            /* ... (Responsive CSS from previous step) ... */
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                box-shadow: none;
+                padding: 15px 10px;
+                display: none; 
+            }
+            .main-content {padding: 15px;}
+            .menu-toggle {
+                display: block; 
+                background-color: var(--admin-color);
+                color: white;
+                padding: 10px 15px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-bottom: 15px;
+            }
+            .sidebar.active {display: block;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h3><i class="fas fa-hammer"></i> ADMIN CONTROL</h3>
+    <a href="admin_dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="admin_payments.html" class="active"><i class="fas fa-file-invoice-dollar"></i> Pending Payments</a>
+    <a href="admin_withdrawals.html"><i class="fas fa-hand-holding-usd"></i> Withdrawal Requests</a>
+    <a href="admin_users.html"><i class="fas fa-users"></i> Manage Users</a>
+    <a href="#" class="logout-btn" id="admin-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</div>
+
+<div class="main-content">
+    <button class="menu-toggle" id="menu-toggle-payments"><i class="fas fa-bars"></i> Menu</button>
+    <h1><i class="fas fa-file-invoice-dollar"></i> Pending Payments</h1>
+    <p>Review and approve user deposit proofs. Approving a payment will update the user's hash rate.</p>
+    
+    <div id="loading-message" style="text-align: center; margin-top: 30px;"><i class="fas fa-spinner fa-spin"></i> Loading pending payments...</div>
+    <div id="no-payments" style="text-align: center; margin-top: 30px; display: none; color: #ff9800;">No pending payments found.</div>
+
+    <div class="table-container">
+        <table class="data-table" id="payments-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>User Email</th>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Screenshot</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="payments-list">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+    // ⚠️ 1. ඔබගේ Firebase Config එක මෙහි පිටපත් කර අලවන්න
+    const firebaseConfig = {
+        apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://xrp-mine-pro.firebaseio.com",
+        projectId: "xrp-mine-pro",
+        storageBucket: "xrp-mine-pro.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // ⚠️ 2. Telegram Bot Token සහ Chat ID එකත් මෙහි තැබිය යුතුය 
+    const TELEGRAM_BOT_TOKEN = '8075478739:AAG--5tk65gjXGyDZlbquiORvKU8-IF5Snw';
+    const CHAT_ID = '8344580966'; // ඇඩ්මින් දැනුම්දීම් සඳහා
+
+    // Firebase Initialize කිරීම
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    // 🚨 3. ඇඩ්මින් ලෙස පිළිගන්නා Email ලිපිනයන් ලැයිස්තුව
+    const ALLOWED_ADMIN_EMAILS = [
+        "admin@xrpminepro.com",
+    ];
+    
+    // Hash Rate Plans (dashboard.html/payment.html වලින්ම ලබාගත යුතුය)
+    const HASH_RATE_PLANS = {
+        bronze: { price: 10.00, hashRate: 150.00, name: "BRONZE" },
+        silver: { price: 50.00, hashRate: 250.00, name: "SILVER" },
+        gold: { price: 100.00, hashRate: 500.00, name: "ELITE GOLD" }
+    };
+
+    // -----------------------------------------------------------
+    // ⚡️ ආරක්ෂක සහ දත්ත පටවන කේතය ⚡️
+    // -----------------------------------------------------------
+
+    auth.onAuthStateChanged(user => {
+        if (user && ALLOWED_ADMIN_EMAILS.includes(user.email)) {
+            // ඇඩ්මින් පිවිසීම සාර්ථකයි
+            loadPendingPayments();
+        } else {
+            // ඇඩ්මින් නොවේ නම් හෝ ලොග් වී නොමැති නම්, Login පිටුවට යවන්න.
+            window.location.href = 'admin_login.html';
+        }
+    });
+
+    document.getElementById('admin-logout').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await auth.signOut();
+        window.location.href = 'admin_login.html';
+    });
+    
+    // ⚡️ Hamburger Menu Toggle Logic
+    document.getElementById('menu-toggle-payments').addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('active');
+    });
+
+    // -----------------------------------------------------------
+    // 🔄 ප්‍රධාන Payment Loading Logic 🔄
+    // -----------------------------------------------------------
+    
+    function loadPendingPayments() {
+        const paymentsRef = db.ref('payments').orderByChild('status').equalTo('Pending');
+        const paymentsList = document.getElementById('payments-list');
+        const loadingMessage = document.getElementById('loading-message');
+        const noPayments = document.getElementById('no-payments');
+        
+        paymentsList.innerHTML = ''; // පැරණි දත්ත ඉවත් කිරීම
+        loadingMessage.style.display = 'block';
+
+        paymentsRef.on('value', (snapshot) => {
+            paymentsList.innerHTML = '';
+            loadingMessage.style.display = 'none';
+
+            if (snapshot.exists()) {
+                noPayments.style.display = 'none';
+                document.getElementById('payments-table').style.display = 'table';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const payment = childSnapshot.val();
+                    const paymentId = childSnapshot.key;
+                    const planDetails = HASH_RATE_PLANS[payment.planId] || { name: payment.planId, hashRate: 0 };
+                    const date = new Date(payment.timestamp).toLocaleDateString();
+
+                    const row = paymentsList.insertRow();
+                    row.innerHTML = `
+                        <td data-label="Date">${date}</td>
+                        <td data-label="User Email">${payment.userEmail}</td>
+                        <td data-label="Plan">${planDetails.name}</td>
+                        <td data-label="Amount">${payment.amountXRP} XRP</td>
+                        <td data-label="Screenshot">
+                            <a href="${payment.screenshotUrl || '#'}" target="_blank" style="color: var(--admin-color); text-decoration: none;">
+                                <i class="fas fa-eye"></i> View Proof
+                            </a>
+                        </td>
+                        <td data-label="Status">
+                            <span class="status-badge status-${payment.status}">Pending</span>
+                        </td>
+                        <td data-label="Actions">
+                            <button class="action-btn btn-approve" onclick="handlePaymentAction('${paymentId}', 'Approved', '${payment.userId}', ${planDetails.hashRate}, '${payment.userEmail}', '${planDetails.name}')">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button class="action-btn btn-reject" onclick="handlePaymentAction('${paymentId}', 'Rejected', '${payment.userId}', 0, '${payment.userEmail}', '${planDetails.name}')">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </td>
+                    `;
+                });
+            } else {
+                noPayments.style.display = 'block';
+                document.getElementById('payments-table').style.display = 'none';
+            }
+        });
+    }
+
+    // -----------------------------------------------------------
+    // ✅ Approve / ❌ Reject Logic 
+    // -----------------------------------------------------------
+
+    async function handlePaymentAction(paymentId, status, userId, hashRateToAdd, userEmail, planName) {
+        if (!confirm(`Are you sure you want to set this payment to '${status}'?`)) {
+            return;
+        }
+
+        try {
+            const updates = {};
+            
+            // 1. Payment Status යාවත්කාලීන කිරීම
+            updates[`/payments/${paymentId}/status`] = status;
+            
+            if (status === 'Approved') {
+                // 2. Hash Rate එක user ගිණුමට එකතු කිරීම (Users ගේ HashRate යාවත්කාලීන කිරීම)
+                const userRef = db.ref(`/users/${userId}`);
+                const userSnapshot = await userRef.once('value');
+                const userData = userSnapshot.val();
+                
+                const currentHashRate = userData.hashRate || 0;
+                const newHashRate = currentHashRate + hashRateToAdd;
+                
+                updates[`/users/${userId}/hashRate`] = newHashRate;
+                updates[`/users/${userId}/activePlan`] = planName; // Plan එකත් සටහන් කිරීම
+                updates[`/users/${userId}/lastDepositXRP`] = HASH_RATE_PLANS[payment.planId].price; // මුදල සටහන් කිරීම
+                updates[`/users/${userId}/lastDepositDate`] = firebase.database.ServerValue.TIMESTAMP;
+                
+                // 3. User ගේ Transaction History එකටද Approved Payment එකක් ලෙස එකතු කිරීම
+                const newTransactionKey = db.ref(`/transactions/${userId}`).push().key;
+                updates[`/transactions/${userId}/${newTransactionKey}`] = {
+                    date: firebase.database.ServerValue.TIMESTAMP,
+                    type: "Deposit",
+                    amount: HASH_RATE_PLANS[payment.planId].price, // AmountXRP මෙහිදී යොදන්න
+                    status: "Completed",
+                    plan: planName,
+                    hashRate: hashRateToAdd,
+                };
+
+                // 4. Telegram හරහා User හට දැනුම් දීම
+                const telegramMessage = `✅ **Payment Approved!**\n` + 
+                                        `👤 **User**: \`${userEmail}\`\n` + 
+                                        `💰 **Plan**: ${planName} (Added ${hashRateToAdd.toFixed(2)} MH/s)\n` +
+                                        `🚀 **New HashRate**: ${newHashRate.toFixed(2)} MH/s\n\n` +
+                                        `Your mining has been activated! Happy mining!`;
+                
+                await sendTelegramNotification(telegramMessage);
+
+            } else if (status === 'Rejected') {
+                // 5. Telegram හරහා User හට ප්‍රතික්ෂේප කළ බව දැනුම් දීම
+                const telegramMessage = `❌ **Payment Rejected!**\n` + 
+                                        `👤 **User**: \`${userEmail}\`\n` + 
+                                        `⚠️ **Reason**: The proof provided for ${planName} was invalid. Please contact support or resubmit with correct proof.`;
+                
+                await sendTelegramNotification(telegramMessage);
+            }
+            
+            // 6. සියලු යාවත්කාලීන කිරීම් එකවර සිදු කිරීම
+            await db.ref().update(updates);
+            
+            alert(`Payment ID ${paymentId} has been set to ${status}. User hash rate updated (if approved).`);
+            
+            // UI යාවත්කාලීන කිරීමට, loadPendingPayments() ස්වයංක්‍රීයව ක්‍රියාත්මක වේ (on('value') නිසා)
+
+        } catch (error) {
+            console.error("Payment action failed:", error);
+            alert(`Failed to process action: ${error.message}`);
+        }
+    }
+
+    // -----------------------------------------------------------
+    // 💬 Telegram Notification Helper 💬
+    // -----------------------------------------------------------
+    async function sendTelegramNotification(text) {
+        const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(telegramApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: text,
+                parse_mode: 'Markdown'
+            })
+        });
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Admin Panel</title>    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* ⚠️ admin_withdrawals.html වෙතින් සියලු Common CSS Styles මෙහි පිටපත් කර අලවන්න */
+        :root {
+            --admin-color: #f44336; 
+            --card-bg: #212121; 
+            --bg-color: #121212;
+            --text-color: #eeeeee;
+            --sidebar-bg: #1a1a1a;
+            --edit-color: #ff9800; /* Orange for Edit/Manage */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles (Copy from admin_dashboard.html) */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar h3 {color: var(--admin-color); text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px;}
+        .sidebar a {
+            display: block; color: var(--text-color); padding: 12px 15px; text-decoration: none; border-radius: 6px; margin-bottom: 10px; transition: background-color 0.3s, color 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--admin-color); color: white;
+        }
+        .sidebar a i {margin-right: 10px;}
+        .sidebar .logout-btn {background-color: #333; color: #ccc; margin-top: 30px;}
+        .sidebar .logout-btn:hover {background-color: #555; color: white;}
+        
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+        }
+        
+        /* Table Styles (Responsive - Copy from previous admin pages) */
+        .table-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto; 
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px; 
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .data-table th {
+            background-color: #333;
+            color: var(--admin-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .data-table tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .btn-edit {
+            background-color: var(--edit-color);
+            color: white;
+        }
+        .btn-deactivate {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn-activate {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .status-Active { background-color: #4CAF5033; color: #4CAF50; }
+        .status-Inactive { background-color: #f4433633; color: #f44336; }
+        
+        /* ------------------ Modal/Popup Styles ------------------ */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto;
+            padding: 25px;
+            border: 1px solid #444;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-content h3 {
+            color: var(--edit-color);
+            margin-top: 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .modal-content input[type="number"],
+        .modal-content input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #1a1a1a;
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+        .modal-save-btn {
+            background-color: var(--edit-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 700;
+        }
+
+        /* Mobile Responsive Table (Copy from admin_payments.html) */
+        @media (max-width: 768px) {
+             .data-table, .data-table tbody, .data-table tr, .data-table td {
+                display: block; 
+            }
+            .data-table thead {display: none;}
+            .data-table tr {margin-bottom: 15px; border: 1px solid #444; border-radius: 8px;}
+            .data-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+            .data-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 50%;
+                padding-left: 15px;
+                font-weight: 700;
+                text-align: left;
+                color: var(--admin-color);
+            }
+            /* Sidebar and Menu Toggle (Copy from admin_dashboard.html changes) */
+            .sidebar {
+                width: 100%; height: auto; position: relative; box-shadow: none; padding: 15px 10px; display: none; 
+            }
+            .main-content {padding: 15px;}
+            .menu-toggle {
+                display: block; background-color: var(--admin-color); color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-bottom: 15px;
+            }
+            .sidebar.active {display: block;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h3><i class="fas fa-hammer"></i> ADMIN CONTROL</h3>
+    <a href="admin_dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="admin_payments.html"><i class="fas fa-file-invoice-dollar"></i> Pending Payments</a>
+    <a href="admin_withdrawals.html"><i class="fas fa-hand-holding-usd"></i> Withdrawal Requests</a>
+    <a href="admin_users.html" class="active"><i class="fas fa-users"></i> Manage Users</a>
+    <a href="#" class="logout-btn" id="admin-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</div>
+
+<div class="main-content">
+    <button class="menu-toggle" id="menu-toggle-users"><i class="fas fa-bars"></i> Menu</button>
+    <h1><i class="fas fa-users"></i> Manage All Users</h1>
+    <p>View and manually adjust user accounts, including XRP balance and Hash Rate.</p>
+    
+    <div id="loading-message" style="text-align: center; margin-top: 30px;"><i class="fas fa-spinner fa-spin"></i> Loading user list...</div>
+    <div id="no-users" style="text-align: center; margin-top: 30px; display: none; color: #ff9800;">No users found.</div>
+
+    <div class="table-container">
+        <table class="data-table" id="users-table">
+            <thead>
+                <tr>
+                    <th>Date Joined</th>
+                    <th>User ID</th>
+                    <th>Email</th>
+                    <th>XRP Balance</th>
+                    <th>Hash Rate (MH/s)</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-list">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="editUserModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3><i class="fas fa-user-edit"></i> Edit User: <span id="modal-user-email"></span></h3>
+        <form id="edit-user-form">
+            <input type="hidden" id="modal-user-id">
+            
+            <label for="modal-balance">XRP Balance</label>
+            <input type="number" id="modal-balance" step="0.0001" required>
+
+            <label for="modal-hashrate">Hash Rate (MH/s)</label>
+            <input type="number" id="modal-hashrate" step="0.01" required>
+            
+            <label for="modal-referral-balance">Referral Balance (XRP)</label>
+            <input type="number" id="modal-referral-balance" step="0.0001" required>
+
+            <button type="submit" class="modal-save-btn"><i class="fas fa-save"></i> Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+    // ⚠️ 1. ඔබගේ Firebase Config එක මෙහි පිටපත් කර අලවන්න
+    const firebaseConfig = {
+        apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
+        authDomain: "xrp-mine-pro.firebaseapp.com",
+        databaseURL: "https://xrp-mine-pro.firebaseio.com",
+        projectId: "xrp-mine-pro",
+        storageBucket: "xrp-mine-pro.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Firebase Initialize කිරීම
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    // 🚨 2. ඇඩ්මින් ලෙස පිළිගන්නා Email ලිපිනයන් ලැයිස්තුව
+    const ALLOWED_ADMIN_EMAILS = [
+        "admin@xrpminepro.com",
+    ];
+
+    // -----------------------------------------------------------
+    // ⚡️ ආරක්ෂක සහ දත්ත පටවන කේතය ⚡️
+    // -----------------------------------------------------------
+
+    auth.onAuthStateChanged(user => {
+        if (user && ALLOWED_ADMIN_EMAILS.includes(user.email)) {
+            loadAllUsers();
+        } else {
+            window.location.href = 'admin_login.html';
+        }
+    });
+
+    document.getElementById('admin-logout').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await auth.signOut();
+        window.location.href = 'admin_login.html';
+    });
+    
+    document.getElementById('menu-toggle-users').addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('active');
+    });
+
+    // -----------------------------------------------------------
+    // 🔄 ප්‍රධාන User Loading Logic 🔄
+    // -----------------------------------------------------------
+    
+    function loadAllUsers() {
+        const usersRef = db.ref('users');
+        const usersList = document.getElementById('users-list');
+        const loadingMessage = document.getElementById('loading-message');
+        const noUsers = document.getElementById('no-users');
+        
+        usersList.innerHTML = ''; 
+        loadingMessage.style.display = 'block';
+
+        usersRef.on('value', (snapshot) => {
+            usersList.innerHTML = '';
+            loadingMessage.style.display = 'none';
+
+            if (snapshot.exists()) {
+                noUsers.style.display = 'none';
+                document.getElementById('users-table').style.display = 'table';
+                
+                snapshot.forEach((childSnapshot) => {
+                    const user = childSnapshot.val();
+                    const userId = childSnapshot.key;
+                    
+                    const dateJoined = new Date(user.timestamp).toLocaleDateString();
+                    const status = user.status || 'Active'; // Default to Active
+                    const statusClass = `status-${status}`;
+
+                    const row = usersList.insertRow();
+                    row.innerHTML = `
+                        <td data-label="Joined">${dateJoined}</td>
+                        <td data-label="User ID">${userId.substring(0, 8)}...</td>
+                        <td data-label="Email">${user.email}</td>
+                        <td data-label="XRP Balance">${(user.balance || 0).toFixed(4)} XRP</td>
+                        <td data-label="Hash Rate">${(user.hashRate || 0).toFixed(2)} MH/s</td>
+                        <td data-label="Status">
+                            <span class="status-badge ${statusClass}">${status}</span>
+                        </td>
+                        <td data-label="Actions">
+                            <button class="action-btn btn-edit" onclick="openEditModal('${userId}', '${user.email}', ${user.balance || 0}, ${user.hashRate || 0}, ${user.referralBalance || 0})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            ${status === 'Active' ? `
+                                <button class="action-btn btn-deactivate" onclick="toggleUserStatus('${userId}', 'Inactive')">
+                                    <i class="fas fa-ban"></i> Deactivate
+                                </button>
+                            ` : `
+                                <button class="action-btn btn-activate" onclick="toggleUserStatus('${userId}', 'Active')">
+                                    <i class="fas fa-check-circle"></i> Activate
+                                </button>
+                            `}
+                        </td>
+                    `;
+                });
+            } else {
+                noUsers.style.display = 'block';
+                document.getElementById('users-table').style.display = 'none';
+            }
+        });
+    }
+    
+    // -----------------------------------------------------------
+    // ✏️ Edit Modal (Popup) Logic 
+    // -----------------------------------------------------------
+    
+    function openEditModal(userId, email, balance, hashRate, referralBalance) {
+        document.getElementById('modal-user-id').value = userId;
+        document.getElementById('modal-user-email').textContent = email;
+        document.getElementById('modal-balance').value = balance.toFixed(4);
+        document.getElementById('modal-hashrate').value = hashRate.toFixed(2);
+        document.getElementById('modal-referral-balance').value = referralBalance.toFixed(4);
+        document.getElementById('editUserModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+
+    document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const userId = document.getElementById('modal-user-id').value;
+        const newBalance = parseFloat(document.getElementById('modal-balance').value);
+        const newHashRate = parseFloat(document.getElementById('modal-hashrate').value);
+        const newReferralBalance = parseFloat(document.getElementById('modal-referral-balance').value);
+
+        if (isNaN(newBalance) || isNaN(newHashRate) || isNaN(newReferralBalance)) {
+            alert("Please enter valid numbers for all fields.");
+            return;
+        }
+
+        const saveButton = document.querySelector('.modal-save-btn');
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saving...';
+
+        try {
+            // Firebase Realtime Database හි දත්ත යාවත්කාලීන කිරීම
+            await db.ref(`/users/${userId}`).update({
+                balance: newBalance,
+                hashRate: newHashRate,
+                referralBalance: newReferralBalance
+            });
+
+            alert(`User ${userId.substring(0, 8)}... data updated successfully!`);
+            closeModal();
+            // loadAllUsers() ස්වයංක්‍රීයව UI යාවත්කාලීන කරයි.
+
+        } catch (error) {
+            console.error("Failed to save user data:", error);
+            alert("Failed to save user data: " + error.message);
+        } finally {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Save Changes';
+        }
+    });
+
+    // -----------------------------------------------------------
+    // 🚫 Activate / Deactivate Logic
+    // -----------------------------------------------------------
+    
+    async function toggleUserStatus(userId, newStatus) {
+        if (!confirm(`Are you sure you want to set user status to '${newStatus}'?`)) {
+            return;
+        }
+
+        try {
+            await db.ref(`/users/${userId}`).update({
+                status: newStatus
+            });
+            alert(`User status set to ${newStatus}.`);
+        } catch (error) {
+            console.error("Failed to change user status:", error);
+            alert("Failed to change user status: " + error.message);
+        }
+    }
+    
+    // Modal එකෙන් පිටත ක්ලික් කළ විට එය වැසීමට
+    window.onclick = function(event) {
+        const modal = document.getElementById('editUserModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+</script>
+</body>
+</html>
