@@ -190,6 +190,7 @@
             cursor: pointer;
             font-weight: 600;
             margin-right: 5px;
+            margin-bottom: 5px; /* බොත්තම් අතර ඉඩ ලබා දීම */
             transition: opacity 0.3s;
         }
 
@@ -244,7 +245,7 @@
             }
 
             .data-table {
-                min-width: 600px; /* වගුවට අවම පළලක් ලබා දීම, scroll වීමට */
+                min-width: 700px; /* වගුවට අවම පළලක් ලබා දීම, scroll වීමට */
             }
 
             .data-table th, .data-table td {
@@ -257,6 +258,9 @@
                 padding: 4px 8px;
                 font-size: 12px;
                 margin-right: 2px;
+                display: block; /* කුඩා තිර වලදී එක යට එක පෙන්වීමට */
+                width: 100%;
+                box-sizing: border-box;
             }
         }
         
@@ -342,11 +346,10 @@
                         <th>Current Plan</th>
                         <th>Balance (XRP)</th>
                         <th>Referred By</th>
-                    </tr>
+                        <th>Account Status</th>  <th>Admin Actions</th>    </tr>
                 </thead>
                 <tbody id="user-list">
-                    <tr><td colspan="5" style="text-align: center;">Loading users...</td></tr>
-                </tbody>
+                    <tr><td colspan="7" style="text-align: center;">Loading users...</td></tr> </tbody>
             </table>
         </div>
 
@@ -357,7 +360,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     
     <script>
-        // ⚠️ ඔබගේ Firebase Config මෙහිදී යාවත්කාලීන කරන්න
+        // ⚠️ ඔබගේ Firebase Config මෙහිදී යාවත්කාලීන කර ඇත
         const firebaseConfig = {
             apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
             authDomain: "xrp-mine-pro.firebaseapp.com",
@@ -375,24 +378,21 @@
         // --- නව සයිඩ් මෙනු JavaScript ---
         function openNav() {
           document.getElementById("mySidenav").style.width = "250px";
-          // document.body.style.paddingRight = "250px"; // අවශ්‍ය නම්, අන්තර්ගතය shift කිරීමට
         }
 
         function closeNav() {
           document.getElementById("mySidenav").style.width = "0";
-          // document.body.style.paddingRight = "0"; // අවශ්‍ය නම්, අන්තර්ගතය shift කිරීමට
         }
 
         // 2. Auth Guard: Admin Check
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
-                // පරිශීලකයා ලොග් වී නොමැති නම්, පිවිසුම් පිටුවට යොමු කරන්න
                 window.location.href = 'admin_login.html';
                 return;
             }
 
-            // ⚠️ Admin Email එක මෙහි පරීක්ෂා කරන්න (admin_login එකේ ඇති එකම email භාවිතා කරන්න)
-            const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin@xrpminepro.com"]; // <-- වෙනස් කරන්න
+            // ⚠️ Admin Email එක මෙහි පරීක්ෂා කරන්න
+            const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin@xrpminepro.com"]; 
 
             if (!ALLOWED_ADMIN_EMAILS.includes(user.email)) {
                 alert("Access Denied. Not an authorized admin.");
@@ -407,7 +407,7 @@
 
         // 3. Logout Functionality (සයිඩ් මෙනුවේ ඇති බොත්තම සඳහා)
         document.getElementById('logout-btn-sidenav').addEventListener('click', async (e) => {
-            e.preventDefault(); // Default link action වැලැක්වීම
+            e.preventDefault(); 
             await auth.signOut();
             window.location.href = 'admin_login.html';
         });
@@ -417,7 +417,8 @@
             try {
                 // --- A. Load User Data ---
                 const usersSnapshot = await db.collection('users').get();
-                const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // 'disabled' ක්ෂේත්‍රය නැතිනම් false ලෙස සලකා ඇත
+                const users = usersSnapshot.docs.map(doc => ({ id: doc.id, disabled: doc.data().disabled || false, ...doc.data() }));
                 
                 // Update Stats
                 document.getElementById('total-users').textContent = users.length;
@@ -426,10 +427,10 @@
                 
                 // Populate User List Table
                 const userListTable = document.getElementById('user-list');
-                userListTable.innerHTML = ''; // Clear loading message
+                userListTable.innerHTML = ''; 
                 
                 if (users.length === 0) {
-                    userListTable.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found.</td></tr>';
+                    userListTable.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const row = userListTable.insertRow();
@@ -439,13 +440,27 @@
                             <td>${user.currentPlan || 'Free'}</td>
                             <td>${(user.balance || 0).toFixed(4)}</td>
                             <td>${user.referredBy || 'None'}</td>
+                            <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
+                            <td>
+                                <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
+                                        onclick="toggleDisableUser('${user.id}', ${user.disabled ? 'false' : 'true'})">
+                                    ${user.disabled ? 'Enable' : 'Disable'}
+                                </button>
+                                <button class="action-btn approve-btn" 
+                                        onclick="resetPassword('${user.email}')">
+                                    Reset Pass
+                                </button>
+                                <button class="action-btn reject-btn" 
+                                        onclick="deleteUser('${user.id}', '${user.email}')">
+                                    Delete
+                                </button>
+                            </td>
                         `;
                     });
                 }
 
 
                 // --- B. Load Withdrawal Requests ---
-                // 'status' ක්ෂේත්‍රය 'Pending' වූ ඉල්ලීම් පමණක් Load කරන්න
                 const withdrawalSnapshot = await db.collection('withdrawal_requests')
                                                    .where('status', '==', 'Pending')
                                                    .get();
@@ -456,7 +471,7 @@
 
                 // Populate Withdrawal List Table
                 const withdrawalListTable = document.getElementById('withdrawal-list');
-                withdrawalListTable.innerHTML = ''; // Clear loading message
+                withdrawalListTable.innerHTML = ''; 
                 
                 if (requests.length === 0) {
                     withdrawalListTable.innerHTML = '<tr><td colspan="5" style="text-align: center;">No pending withdrawal requests.</td></tr>';
@@ -476,12 +491,9 @@
                     });
                 }
                 
-                // ⚠️ Total Revenue ගණනය කිරීම (අවශ්‍ය නම්, payment_proofs collection එක භාවිතා කරන්න)
-                // මෙම කොටස ඔබට අවශ්‍ය නම් ක්‍රියාත්මක කරන්න
-
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Error loading users.</td></tr>`;
+                document.getElementById('user-list').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger-color);">Error loading users.</td></tr>`;
                 document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Error loading requests.</td></tr>`;
             }
         }
@@ -517,6 +529,68 @@
                 alert(`Failed to ${action} withdrawal: ` + error.message);
             }
         }
+        
+        // 6. User Management Functions
+        
+        // 🚨 ඩිසෙබල් කිරීමට/Enable කිරීමට (Deactivate/Activate)
+        async function toggleDisableUser(userId, disableState) {
+            const action = disableState === 'true' ? 'Disable' : 'Enable';
+            if (!confirm(`Are you sure you want to ${action} account for user ${userId.substring(0, 8)}...?`)) {
+                return;
+            }
+
+            try {
+                // Firestore document එකේ 'disabled' ක්ෂේත්‍රය යාවත්කාලීන කිරීම
+                await db.collection('users').doc(userId).update({
+                    disabled: disableState === 'true' // Boolean අගයක් යැවීම
+                });
+                
+                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore. \n\nIMPORTANT: User must check for the 'disabled' field when logging in to fully restrict access.`);
+                
+                loadDashboardData();
+            } catch (error) {
+                console.error(`Error toggling disable state:`, error);
+                alert(`Failed to ${action} account: ` + error.message);
+            }
+        }
+
+        // 🚨 Password Reset (Password Reset Link එකක් Email කිරීමට)
+        async function resetPassword(userEmail) {
+            if (!confirm(`Are you sure you want to send a password reset email to ${userEmail}?`)) {
+                return;
+            }
+
+            try {
+                // Firebase Auth සේවාව හරහා password reset email එකක් යැවීම
+                await auth.sendPasswordResetEmail(userEmail);
+                
+                alert(`Password reset email sent successfully to ${userEmail}.`);
+            } catch (error) {
+                console.error(`Error sending password reset email:`, error);
+                alert(`Failed to send password reset email: ` + error.message);
+            }
+        }
+
+        // 🚨 User Delete (ගිණුම මකා දැමීම)
+        async function deleteUser(userId, userEmail) {
+            if (!confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the user ${userEmail} (${userId.substring(0, 8)}...) and all their data? THIS ACTION CANNOT BE UNDONE.`)) {
+                return;
+            }
+
+            try {
+                // Firestore Document එක මකා දැමීම
+                await db.collection('users').doc(userId).delete();
+                
+                // ⚠️ ගිණුම සම්පූර්ණයෙන්ම මකා දැමීමට Cloud Functions (Backend) අවශ්‍ය වේ.
+                alert(`User ${userEmail} Firestore data has been deleted. \n\nIMPORTANT: To fully delete the user from Firebase Authentication, you must use the Firebase Console or a Backend Function.`);
+                
+                loadDashboardData();
+            } catch (error) {
+                console.error(`Error deleting user:`, error);
+                alert(`Failed to delete user: ` + error.message);
+            }
+        }
+
     </script>
 
 </body>
