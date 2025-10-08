@@ -683,7 +683,7 @@
             }
         }
 
-        // 7. NEW: User Registration Functionality
+        // 7. NEW: User Registration Functionality (FINAL IMPLEMENTATION)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('reg-email').value;
@@ -695,13 +695,27 @@
             messageEl.style.color = 'var(--primary-color)';
             submitBtn.disabled = true;
 
+            const adminUser = auth.currentUser;
+            if (!adminUser) {
+                 messageEl.textContent = 'Error: Admin session lost. Please refresh and log in again.';
+                 messageEl.style.color = 'var(--danger-color)';
+                 submitBtn.disabled = false;
+                 return;
+            }
+            
+            // Admin ගේ Session විස්තර ලබා ගැනීම
+            const adminEmail = adminUser.email;
+            
+            // ⚠️ Admin මුරපදය මෙහි තැන්පත් කරන්න (අනාරක්ෂිතයි!)
+            const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD_HERE'; 
+
             try {
-                // 1. Firebase Auth හරහා නව User කෙනෙක් නිර්මාණය කිරීම
+                // 1. නව User කෙනෙක් නිර්මාණය කිරීම 
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
+                const newUser = userCredential.user;
 
                 // 2. Firestore හි 'users' Collection එකට Entry එකක් එක් කිරීම
-                await db.collection('users').doc(user.uid).set({
+                await db.collection('users').doc(newUser.uid).set({
                     email: email,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     balance: 0,
@@ -709,24 +723,35 @@
                     disabled: false
                 });
 
-                messageEl.textContent = `Success! User ${email} registered with ID: ${user.uid.substring(0, 8)}...`;
+                // 3. Admin ගේ ගිණුමට නැවත ලොග් වීම
+                // ⚠️ මෙය Admin ගේ Session එක ආරක්ෂා කිරීමට ඇති එකම Client-side ක්‍රමයයි.
+                await auth.signInWithEmailAndPassword(adminEmail, ADMIN_PASSWORD); 
+
+                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website without verification. Admin session restored.`;
                 messageEl.style.color = 'var(--success-color)';
                 
                 // Form එක clear කිරීම
-                document.getElementById('register-user-form').reset();
+                document.getElementById('reg-email').value = '';
+                document.getElementById('reg-password').value = '';
                 
-                // Dashboard දත්ත නැවත Load කිරීම (නව User කෙනෙක් එකතු වූ නිසා)
+                // 4. Dashboard දත්ත නැවත Load කිරීම
                 loadDashboardData();
 
             } catch (error) {
-                console.error("Error registering new user:", error);
-                messageEl.textContent = `Registration Failed: ${error.message}`;
+                console.error("Error registering new user or restoring session:", error);
+                
+                if (error.code === 'auth/wrong-password') {
+                     // ⚠️ Admin මුරපදය වැරදි නම්, මෙය සිදුවිය හැක.
+                     messageEl.textContent = `Registration Success, but Admin Session LOST! Please reload and log in as Admin.`;
+                } else {
+                    messageEl.textContent = `Registration Failed: ${error.message}`;
+                }
+                
                 messageEl.style.color = 'var(--danger-color)';
             } finally {
                 submitBtn.disabled = false;
             }
         });
-
     </script>
 
 </body>
