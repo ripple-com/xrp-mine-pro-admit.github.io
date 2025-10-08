@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdrawal Requests - Admin Panel</title>    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* ⚠️ admin_payments.html වෙතින් සියලු CSS Styles මෙහි පිටපත් කර අලවන්න */
+        :root {
+            --admin-color: #f44336; 
+            --card-bg: #212121; 
+            --bg-color: #121212;
+            --text-color: #eeeeee;
+            --sidebar-bg: #1a1a1a;
+            --approve-color: #03a9f4; /* නිල් (Processing/Payment) */
+            --reject-color: #f44336;
+            --complete-color: #4CAF50; /* කොළ (Completed) */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles (Copy from admin_dashboard.html) */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .sidebar h3 {color: var(--admin-color); text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px;}
+        .sidebar a {
+            display: block; color: var(--text-color); padding: 12px 15px; text-decoration: none; border-radius: 6px; margin-bottom: 10px; transition: background-color 0.3s, color 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--admin-color); color: white;
+        }
+        .sidebar a i {margin-right: 10px;}
+        .sidebar .logout-btn {background-color: #333; color: #ccc; margin-top: 30px;}
+        .sidebar .logout-btn:hover {background-color: #555; color: white;}
+        
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+        }
+        
+        /* Table Styles (Responsive - Copy from admin_payments.html) */
+        .table-container {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto; 
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px; 
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .data-table th {
+            background-color: #333;
+            color: var(--admin-color);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .data-table tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-weight: 600;
+            white-space: nowrap; /* බොත්තම් නොකැඩීමට */
+        }
+
+        .btn-process {
+            background-color: var(--approve-color);
+            color: white;
+        }
+        .btn-complete {
+            background-color: var(--complete-color);
+            color: white;
+        }
+        .btn-reject {
+            background-color: var(--reject-color);
+            color: white;
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .status-Pending { background-color: #ff980033; color: #ff9800; }
+        .status-Processing { background-color: #03a9f433; color: #03a9f4; }
+        .status-Completed { background-color: #4CAF5033; color: #4CAF50; }
+        .status-Rejected { background-color: #f4433633; color: #f44336; }
+
+        /* Mobile Responsive Table (Copy from admin_payments.html) */
+        @media (max-width: 768px) {
+             .data-table, .data-table tbody, .data-table tr, .data-table td {
+                display: block; 
+            }
+            .data-table thead {display: none;}
+            .data-table tr {margin-bottom: 15px; border: 1px solid #444; border-radius: 8px;}
+            .data-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+            .data-table td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 50%;
+                padding-left: 15px;
+                font-weight: 700;
+                text-align: left;
+                color: var(--admin-color);
+            }
+            /* Sidebar and Menu Toggle (Copy from admin_dashboard.html changes) */
+            .sidebar {
+                width: 100%; height: auto; position: relative; box-shadow: none; padding: 15px 10px; display: none; 
+            }
+            .main-content {padding: 15px;}
+            .menu-toggle {
+                display: block; background-color: var(--admin-color); color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-bottom: 15px;
+            }
+            .sidebar.active {display: block;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h3><i class="fas fa-hammer"></i> ADMIN CONTROL</h3>
+    <a href="admin_dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="admin_payments.html"><i class="fas fa-file-invoice-dollar"></i> Pending Payments</a>
+    <a href="admin_withdrawals.html" class="active"><i class="fas fa-hand-holding-usd"></i> Withdrawal Requests</a>
+    <a href="admin_users.html"><i class="fas fa-users"></i> Manage Users</a>
+    <a href="#" class="logout-btn" id="admin-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</div>
+
+<div class="main-content">
+    <button class="menu-toggle" id="menu-toggle-withdrawals"><i class="fas fa-bars"></i> Menu</button>
+    <h1><i class="fas fa-hand-holding-usd"></i> Withdrawal Requests</h1>
+    <p>Review user withdrawal requests. Mark as "Processing" when ready to send, and "Completed" after sending XRP.</p>
+    
+    <div id="loading-message" style="text-align: center; margin-top: 30px;"><i class="fas fa-spinner fa-spin"></i> Loading withdrawal requests...</div>
+    <div id="no-requests" style="text-align: center; margin-top: 30px; display: none; color: #03a9f4;">No pending withdrawal requests found.</div>
+
+    <div class="table-container">
+        <table class="data-table" id="withdrawals-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>User Email</th>
+                    <th>Amount (Net)</th>
+                    <th>Address & Tag</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="withdrawals-list">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+    // ⚠️ 1. ඔබගේ Firebase Config එක මෙහි පිටපත් කර අලවන්න
+    const firebaseConfig = {
+        apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
+        authDomain: "xrp-mine-pro.firebaseapp.com",
+        databaseURL: "https://xrp-mine-pro.firebaseio.com",
+        projectId: "xrp-mine-pro",
+        storageBucket: "xrp-mine-pro.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // ⚠️ 2. Telegram Bot Token සහ Chat ID එකත් මෙහි තැබිය යුතුය 
+    const TELEGRAM_BOT_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';
+    const CHAT_ID = 'YOUR_ADMIN_CHAT_ID'; // ඇඩ්මින් දැනුම්දීම් සඳහා
+    
+    // Firebase Initialize කිරීම
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    // 🚨 3. ඇඩ්මින් ලෙස පිළිගන්නා Email ලිපිනයන් ලැයිස්තුව
+    const ALLOWED_ADMIN_EMAILS = [
+        "admin@xrpminepro.com",
+    ];
+
+    // -----------------------------------------------------------
+    // ⚡️ ආරක්ෂක සහ දත්ත පටවන කේතය ⚡️
+    // -----------------------------------------------------------
+
+    auth.onAuthStateChanged(user => {
+        if (user && ALLOWED_ADMIN_EMAILS.includes(user.email)) {
+            loadWithdrawalRequests();
+        } else {
+            window.location.href = 'admin_login.html';
+        }
+    });
+
+    document.getElementById('admin-logout').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await auth.signOut();
+        window.location.href = 'admin_login.html';
+    });
+    
+    document.getElementById('menu-toggle-withdrawals').addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('active');
+    });
+
+    // -----------------------------------------------------------
+    // 🔄 ප්‍රධාන Withdrawal Loading Logic 🔄
+    // -----------------------------------------------------------
+    
+    function loadWithdrawalRequests() {
+        // Pending සහ Processing යන දෙකම පෙන්වීමට, තත්ත්වය අනුව වර්ග කිරීමක් අවශ්‍ය වේ
+        const withdrawalsRef = db.ref('withdrawals').orderByChild('timestamp'); // නවතම ඉල්ලීම් මුලින්
+        const withdrawalsList = document.getElementById('withdrawals-list');
+        const loadingMessage = document.getElementById('loading-message');
+        const noRequests = document.getElementById('no-requests');
+        
+        withdrawalsList.innerHTML = ''; 
+        loadingMessage.style.display = 'block';
+
+        withdrawalsRef.on('value', (snapshot) => {
+            withdrawalsList.innerHTML = '';
+            loadingMessage.style.display = 'none';
+            let pendingAndProcessingCount = 0;
+
+            if (snapshot.exists()) {
+                
+                snapshot.forEach((childSnapshot) => {
+                    const withdrawal = childSnapshot.val();
+                    const withdrawalId = childSnapshot.key;
+                    
+                    // Pending සහ Processing ඉල්ලීම් පමණක් පෙන්වීමට
+                    if (withdrawal.status !== 'Completed' && withdrawal.status !== 'Rejected') {
+                        pendingAndProcessingCount++;
+                        
+                        const date = new Date(withdrawal.timestamp).toLocaleDateString();
+                        const amountNet = (withdrawal.amount - (withdrawal.fee || 0)).toFixed(4);
+                        const statusClass = `status-${withdrawal.status}`;
+                        
+                        const row = withdrawalsList.insertRow();
+                        row.innerHTML = `
+                            <td data-label="Date">${date}</td>
+                            <td data-label="User Email">${withdrawal.userEmail}</td>
+                            <td data-label="Amount (Net)">${amountNet} XRP</td>
+                            <td data-label="Address & Tag">
+                                <strong>Address:</strong> ${withdrawal.address.substring(0, 10)}... <br>
+                                <strong>Tag:</strong> ${withdrawal.tag || 'N/A'}
+                            </td>
+                            <td data-label="Status">
+                                <span class="status-badge ${statusClass}">${withdrawal.status}</span>
+                            </td>
+                            <td data-label="Actions">
+                                ${withdrawal.status === 'Pending' ? `
+                                <button class="action-btn btn-process" onclick="handleWithdrawalAction('${withdrawalId}', 'Processing', '${withdrawal.userEmail}')">
+                                    <i class="fas fa-spinner"></i> Process
+                                </button>
+                                <button class="action-btn btn-reject" onclick="handleWithdrawalAction('${withdrawalId}', 'Rejected', '${withdrawal.userEmail}')">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                                ` : ''}
+                                ${withdrawal.status === 'Processing' ? `
+                                <button class="action-btn btn-complete" onclick="handleWithdrawalAction('${withdrawalId}', 'Completed', '${withdrawal.userEmail}', ${withdrawal.amount}, '${withdrawal.txHash || ''}')">
+                                    <i class="fas fa-check"></i> Complete
+                                </button>
+                                ` : ''}
+                            </td>
+                        `;
+                    }
+                });
+                
+                if (pendingAndProcessingCount === 0) {
+                     noRequests.style.display = 'block';
+                     document.getElementById('withdrawals-table').style.display = 'none';
+                } else {
+                     noRequests.style.display = 'none';
+                     document.getElementById('withdrawals-table').style.display = 'table';
+                }
+
+            } else {
+                noRequests.style.display = 'block';
+                document.getElementById('withdrawals-table').style.display = 'none';
+            }
+        });
+    }
+
+    // -----------------------------------------------------------
+    // 🚀 Withdrawal Action Logic 
+    // -----------------------------------------------------------
+
+    async function handleWithdrawalAction(withdrawalId, status, userEmail, amountXRP, txHash = '') {
+        if (!confirm(`Are you sure you want to set this withdrawal request to '${status}'?`)) {
+            return;
+        }
+
+        try {
+            const updates = {};
+            
+            // 1. Withdrawal Status යාවත්කාලීන කිරීම
+            updates[`/withdrawals/${withdrawalId}/status`] = status;
+            
+            let telegramMessage = `⚠️ **Withdrawal Status Update** ⚠️\n👤 **User**: \`${userEmail}\`\n`;
+
+            if (status === 'Processing') {
+                telegramMessage += `🔄 **Status**: Your withdrawal request is now **Processing**. We are preparing to send your XRP.\n\nThank you for your patience!`;
+            
+            } else if (status === 'Completed') {
+                // Completed සඳහා Transaction Hash එකක් ඇතුළත් කිරීමට විමසීම
+                if (!txHash) {
+                    txHash = prompt("Enter the Transaction Hash (TXN ID) for this withdrawal:");
+                    if (!txHash) {
+                        alert("Transaction Hash is required to mark as Completed.");
+                        return;
+                    }
+                }
+                updates[`/withdrawals/${withdrawalId}/txHash`] = txHash;
+                
+                telegramMessage += `✅ **Status**: Your withdrawal of ${amountXRP.toFixed(4)} XRP is **Completed!**\n` + 
+                                   `🔗 **TXN ID**: \`${txHash.substring(0, 15)}...\`\n\n` +
+                                   `Check your wallet for the funds. Happy mining!`;
+
+            } else if (status === 'Rejected') {
+                telegramMessage += `❌ **Status**: Your withdrawal request was **Rejected**.\n\n⚠️ Please check your balance and try again, or contact support for the reason.`;
+            }
+            
+            // 2. සියලු යාවත්කාලීන කිරීම් එකවර සිදු කිරීම
+            await db.ref().update(updates);
+            
+            alert(`Withdrawal ID ${withdrawalId} has been set to ${status}.`);
+            
+            // 3. User හට Telegram හරහා දැනුම් දීම
+            await sendTelegramNotification(telegramMessage);
+
+        } catch (error) {
+            console.error("Withdrawal action failed:", error);
+            alert(`Failed to process action: ${error.message}`);
+        }
+    }
+    
+    // 💬 Telegram Notification Helper (admin_payments.html වෙතින් පිටපත් කර ඇත)
+    async function sendTelegramNotification(text) {
+        const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(telegramApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: text,
+                parse_mode: 'Markdown'
+            })
+        });
+    }
+
+</script>
+</body>
+</html>
