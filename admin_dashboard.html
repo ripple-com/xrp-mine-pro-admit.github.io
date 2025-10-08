@@ -9,17 +9,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
-        /* Shared Styles */
+        /* Shared Styles (ඔබගේ මූලික CSS මෙහිදී භාවිතා කර ඇත) */
         :root {
-            --admin-color: #f44336;       /* Red for Admin (Accent) */
-            --card-bg: #1c1c1c;           /* Dark Card Background */
-            --bg-color: #121212;          /* Very Dark Body Background */
-            --text-color: #f0f0f0;        /* Light Text */
-            --primary-color: #03a9f4;     /* XRP Blue/Primary Accent */
-            --secondary-color: #e0e0e0;   /* Secondary Text */
-            --success-color: #4CAF50;     /* Green */
-            --danger-color: #f44336;      /* Red */
-            --border-color: #333;         /* Subtle Border */
+            --admin-color: #f44336;       
+            --card-bg: #1c1c1c;           
+            --bg-color: #121212;          
+            --text-color: #f0f0f0;        
+            --primary-color: #03a9f4;     
+            --secondary-color: #e0e0e0;   
+            --success-color: #4CAF50;     
+            --danger-color: #f44336;      
+            --border-color: #333;         
         }
 
         body {
@@ -29,11 +29,10 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
-            transition: padding-right 0.3s;
         }
 
         .header {
-            background-color: var(--card-bg); /* Dark header */
+            background-color: var(--card-bg); 
             border-bottom: 3px solid var(--primary-color);
             color: white;
             padding: 15px 30px;
@@ -52,7 +51,7 @@
             font-weight: 700;
         }
         
-        /* --- Side Menu CSS --- */
+        /* Side Menu CSS */
         .sidenav {
             height: 100%;
             width: 0;
@@ -60,7 +59,7 @@
             z-index: 1001;
             top: 0;
             right: 0;
-            background-color: #2a2a2a; /* Slightly lighter than card-bg */
+            background-color: #2a2a2a; 
             overflow-x: hidden;
             transition: 0.3s;
             padding-top: 60px;
@@ -115,8 +114,7 @@
             background-color: #ff3333;
         }
 
-        /* --- Main Content --- */
-
+        /* Main Content */
         .container {
             padding: 30px;
             max-width: 1300px;
@@ -190,11 +188,11 @@
         
         .data-table {
             width: 100%;
-            border-collapse: separate; /* for rounded corners */
+            border-collapse: separate; 
             border-spacing: 0;
             margin-top: 20px;
             border-radius: 8px;
-            overflow: hidden; /* prevents inner content from bleeding */
+            overflow: hidden; 
         }
 
         .data-table th, .data-table td {
@@ -232,6 +230,13 @@
             margin-right: 8px;
             margin-bottom: 8px; 
             transition: background-color 0.3s, transform 0.3s;
+            white-space: nowrap; /* බොත්තම් එක පේලියක තබා ගැනීමට */
+            font-size: 13px; /* කුඩා කරන ලදී */
+        }
+        
+        .edit-btn {
+            background-color: #ff9800; /* Orange */
+            color: white;
         }
 
         .action-btn:disabled {
@@ -259,64 +264,152 @@
             font-style: italic;
         }
         
-        /* ---------------------------------- */
-        /* --- Responsive Styles --- */
-        /* ---------------------------------- */
-        
-        @media (max-width: 1024px) {
-            .card-grid {
-                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            }
+        /* Modal Styles */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 2000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6); 
+        }
+
+        .modal-content {
+            background-color: var(--bg-color);
+            margin: 10% auto; 
+            padding: 30px;
+            border: 1px solid var(--primary-color);
+            width: 80%; 
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content h3 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .modal-content label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: 600;
+        }
+
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background-color: #242424; 
+            color: var(--text-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .modal-footer {
+            margin-top: 25px;
+            text-align: right;
         }
         
+        .modal-footer button {
+            margin-left: 10px;
+        }
+        
+        .close-btn {
+            color: var(--text-color);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: var(--danger-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        /* Responsive Styles */
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
             }
-            
-            .header {
-                padding: 15px 20px;
-            }
-
             .card-grid {
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
                 gap: 15px;
             }
-            
             .stat-card p {
                 font-size: 28px;
             }
-
             .table-responsive {
                 overflow-x: auto;
             }
-
             .data-table {
-                min-width: 800px; 
+                min-width: 1000px; /* වැඩි කරන ලදී */
             }
-
             .data-table th, .data-table td {
-                padding: 10px;
-                font-size: 13px;
-            }
-            
-            .action-btn {
-                padding: 6px 10px;
+                padding: 8px;
                 font-size: 12px;
-                margin-right: 4px;
+            }
+            .action-btn {
+                padding: 6px 8px;
+                font-size: 11px;
+                margin-right: 3px;
+            }
+            .modal-content {
+                width: 90%;
+                margin: 5% auto;
             }
         }
     </style>
 </head>
 <body>
     
+    <div id="editUserModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('editUserModal').style.display='none'">&times;</span>
+        <h3><i class="fas fa-edit"></i> Edit User Data</h3>
+        <form id="edit-user-form">
+            <input type="hidden" id="edit-user-id">
+
+            <label for="edit-email">Email:</label>
+            <input type="email" id="edit-email" disabled>
+
+            <label for="edit-plan">Current Plan:</label>
+            <input type="text" id="edit-plan" required>
+
+            <label for="edit-balance">Balance (XRP):</label>
+            <input type="number" id="edit-balance" step="0.0001" required>
+            
+            <label for="edit-hashrate">Total Hash Rate (TH/s):</label>
+            <input type="number" id="edit-hashrate" step="0.01" required>
+
+            <p id="edit-message" style="margin-top: 15px; font-style: italic; color: var(--danger-color);"></p>
+
+            <div class="modal-footer">
+                <button type="submit" id="edit-save-btn" class="action-btn approve-btn">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="action-btn reject-btn" onclick="document.getElementById('editUserModal').style.display='none'">
+                    Cancel
+                </button>
+            </div>
+        </form>
+      </div>
+    </div>
+    
     <div id="mySidenav" class="sidenav">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times; Close</a>
         <a href="#"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="#user-list-section"><i class="fas fa-users"></i> Users</a>
         <a href="#withdrawal-section"><i class="fas fa-money-check-alt"></i> Withdrawals</a>
-        <a href="#register-user-section"><i class="fas fa-user-plus"></i> Register New User</a>
-        <a href="#"><i class="fas fa-cogs"></i> Settings</a>
+        <a href="#register-user-section"><i class="fas fa-user-plus"></i> Register New User (Add User)</a>
         <a href="#" class="logout-link" id="logout-btn-sidenav"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
 
@@ -332,21 +425,21 @@
                 <h3><i class="fas fa-users"></i> Total Users</h3>
                 <p id="total-users" class="loading-skeleton"></p>
             </div>
-            <div class="stat-card">
-                <h3><i class="fas fa-hourglass-half"></i> Pending Withdrawals</h3>
-                <p id="pending-withdrawals" class="loading-skeleton"></p>
+             <div class="stat-card">
+                <h3><i class="fas fa-bolt"></i> Total Hash Rate (TH/s)</h3> 
+                <p id="total-hashrate" class="loading-skeleton"></p> 
             </div>
             <div class="stat-card">
                 <h3><i class="fas fa-rocket"></i> Active Plans</h3>
                 <p id="active-plans" class="loading-skeleton"></p>
             </div>
             <div class="stat-card">
-                <h3><i class="fas fa-dollar-sign"></i> Total Revenue (Est.)</h3>
-                <p id="total-revenue" class="loading-skeleton"></p>
+                <h3><i class="fas fa-hourglass-half"></i> Pending Withdrawals</h3>
+                <p id="pending-withdrawals" class="loading-skeleton"></p>
             </div>
         </div>
         
-        <h2 id="register-user-section"><i class="fas fa-user-plus"></i> Register New User</h2>
+        <h2 id="register-user-section"><i class="fas fa-user-plus"></i> Register New User (Add User)</h2>
         <div class="stat-card" style="padding: 30px;">
             <form id="register-user-form">
                 <div style="margin-bottom: 20px;">
@@ -367,6 +460,7 @@
             </form>
             <p id="reg-message" style="margin-top: 15px; font-style: italic;"></p>
         </div>
+        
         <h2 id="withdrawal-section"><i class="fas fa-money-check-alt"></i> Pending Withdrawal Requests</h2>
         <div class="table-responsive">
             <table class="data-table">
@@ -390,12 +484,12 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Email</th>
-                        <th>UID</th>
-                        <th>Current Plan</th>
+                        <th>Email / UID</th>
+                        <th>Reg. Date/Time</th> 
+                        <th>Hash Rate (TH/s)</th> 
                         <th>Balance (XRP)</th>
-                        <th>Referred By</th>
-                        <th>Account Status</th>
+                        <th>Plan</th>
+                        <th>Status</th>
                         <th>Admin Actions</th>
                     </tr>
                 </thead>
@@ -412,7 +506,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     
     <script>
-        // ⚠️ ඔබගේ Firebase Config මෙහිදී යාවත්කාලීන කර ඇත
+        // ⚠️ ඔබගේ Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
             authDomain: "xrp-mine-pro.firebaseapp.com",
@@ -426,6 +520,9 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+
+        // Admin Email Whitelist
+        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "your.admin@xrpminepro.com"]; 
 
         // --- Side Menu JavaScript ---
         function openNav() {
@@ -444,9 +541,6 @@
                 return;
             }
 
-            // ⚠️ Admin Email එක මෙහි පරීක්ෂා කරන්න
-            const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin@xrpminepro.com"]; 
-
             if (!ALLOWED_ADMIN_EMAILS.includes(user.email)) {
                 alert("Access Denied. Not an authorized admin.");
                 await auth.signOut();
@@ -464,34 +558,56 @@
             await auth.signOut();
             window.location.href = 'admin_login.html';
         });
+        
+        // 4. Time Formatting Function
+        function formatFirebaseTimestamp(timestamp) {
+            if (!timestamp || !timestamp.toDate) return 'N/A';
+            const date = timestamp.toDate();
+            // Format: YYYY-MM-DD HH:MM:SS
+            return date.toLocaleString('en-GB', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false 
+            }).replace(',', ''); 
+        }
 
-        // 4. Main Data Loading Function
+        // 5. Main Data Loading Function
         async function loadDashboardData() {
             // Loading skeleton effects
             document.getElementById('total-users').className = 'loading-skeleton';
+            document.getElementById('total-hashrate').className = 'loading-skeleton'; // New
             document.getElementById('pending-withdrawals').className = 'loading-skeleton';
             document.getElementById('active-plans').className = 'loading-skeleton';
-            document.getElementById('total-revenue').className = 'loading-skeleton';
             
             document.getElementById('user-list').innerHTML = '<tr><td colspan="7" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
             document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="5" style="text-align: center;" class="loading-text">Loading requests...</td></tr>';
 
-
             try {
                 // --- A. Load User Data ---
                 const usersSnapshot = await db.collection('users').get();
-                const users = usersSnapshot.docs.map(doc => ({ id: doc.id, disabled: doc.data().disabled || false, ...doc.data() }));
+                const users = usersSnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    disabled: doc.data().disabled || false, 
+                    totalHashRate: doc.data().totalHashRate || 0, // නව ක්ෂේත්‍රය
+                    createdAt: doc.data().createdAt, 
+                    ...doc.data() 
+                }));
                 
                 // Update Stats
                 document.getElementById('total-users').textContent = users.length;
-                document.getElementById('total-users').className = ''; // Remove skeleton
+                document.getElementById('total-users').className = ''; 
+                
+                const totalHashRate = users.reduce((sum, user) => sum + (user.totalHashRate || 0), 0);
+                document.getElementById('total-hashrate').textContent = totalHashRate.toFixed(2); // නව Hash Rate Stat
+                document.getElementById('total-hashrate').className = ''; 
+                
                 const activePlans = users.filter(u => u.currentPlan && u.currentPlan !== 'Free').length;
                 document.getElementById('active-plans').textContent = activePlans;
-                document.getElementById('active-plans').className = ''; // Remove skeleton
-                
-                // Temporary static revenue data (Update based on your real logic)
-                document.getElementById('total-revenue').textContent = '$' + (users.length * 5).toFixed(2);
-                document.getElementById('total-revenue').className = ''; // Remove skeleton
+                document.getElementById('active-plans').className = ''; 
                 
                 // Populate User List Table
                 const userListTable = document.getElementById('user-list');
@@ -501,26 +617,31 @@
                     userListTable.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found.</td></tr>';
                 } else {
                     users.forEach(user => {
+                        const regDateTime = formatFirebaseTimestamp(user.createdAt);
                         const row = userListTable.insertRow();
                         row.innerHTML = `
-                            <td>${user.email || 'N/A'}</td>
-                            <td>${user.id.substring(0, 8)}...</td>
-                            <td>${user.currentPlan || 'Free'}</td>
+                            <td>${user.email || 'N/A'}<br><small style="color:#999;font-size:10px;">UID: ${user.id.substring(0, 8)}...</small></td>
+                            <td>${regDateTime}</td> 
+                            <td>${(user.totalHashRate || 0).toFixed(2)}</td>
                             <td>${(user.balance || 0).toFixed(4)}</td>
-                            <td>${user.referredBy || 'None'}</td>
+                            <td>${user.currentPlan || 'Free'}</td>
                             <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
-                            <td>
+                            <td style="white-space: nowrap;">
+                                <button class="action-btn edit-btn" 
+                                        onclick="openEditUserModal('${user.id}', '${user.email}', '${user.currentPlan || 'Free'}', ${user.balance || 0}, ${user.totalHashRate || 0})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
                                 <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
                                         onclick="toggleDisableUser('${user.id}', ${user.disabled ? 'false' : 'true'})">
-                                    ${user.disabled ? 'Enable' : 'Disable'}
+                                    <i class="fas fa-user-${user.disabled ? 'check' : 'lock'}"></i> ${user.disabled ? 'Enable' : 'Disable'}
                                 </button>
                                 <button class="action-btn approve-btn" 
                                         onclick="resetPassword('${user.email}')">
-                                    Reset Pass
+                                    <i class="fas fa-key"></i> Reset Pass
                                 </button>
                                 <button class="action-btn reject-btn" 
                                         onclick="deleteUser('${user.id}', '${user.email}')">
-                                    Delete
+                                    <i class="fas fa-trash-alt"></i> Delete
                                 </button>
                             </td>
                         `;
@@ -528,17 +649,15 @@
                 }
 
 
-                // --- B. Load Withdrawal Requests ---
+                // --- B. Load Withdrawal Requests (Previous implementation remains) ---
                 const withdrawalSnapshot = await db.collection('withdrawal_requests')
                                                    .where('status', '==', 'Pending')
                                                    .get();
                 const requests = withdrawalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // Update Stats
                 document.getElementById('pending-withdrawals').textContent = requests.length;
-                document.getElementById('pending-withdrawals').className = ''; // Remove skeleton
+                document.getElementById('pending-withdrawals').className = ''; 
 
-                // Populate Withdrawal List Table
                 const withdrawalListTable = document.getElementById('withdrawal-list');
                 withdrawalListTable.innerHTML = ''; 
                 
@@ -566,17 +685,17 @@
                 document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`;
             }
         }
-
-        // 5. Withdrawal Handling Function (Approved නම් Balance එක අඩු කිරීමට Logic එකතු කර ඇත)
+        
+        // 6. Withdrawal Handling Function (Same as before)
         async function handleWithdrawal(requestId, action, userId, amount) {
+            // ... (Your existing handleWithdrawal function) ...
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
             }
             
             try {
-                // Firestore Transaction භාවිතා කරමින් Withdrawal Approved කිරීම
+                // Firestore Transaction
                 await db.runTransaction(async (transaction) => {
-                    // 1. Withdrawal request එකේ status යාවත්කාලීන කිරීම
                     const withdrawalRef = db.collection('withdrawal_requests').doc(requestId);
                     transaction.update(withdrawalRef, {
                         status: action,
@@ -584,7 +703,6 @@
                     });
 
                     if (action === 'Approved') {
-                        // 2. Approved නම්, user ගේ balance එක යාවත්කාලීන කිරීම
                         const userRef = db.collection('users').doc(userId);
                         const userDoc = await transaction.get(userRef);
 
@@ -592,12 +710,10 @@
                             throw "User document does not exist!";
                         }
                         
-                        // නව balance එක ගණනය කිරීම
                         const currentBalance = userDoc.data().balance || 0;
                         const newBalance = currentBalance - amount;
 
                         if (newBalance < 0) {
-                            // මෙය සිදුවිය යුතු නැත, නමුත් ආරක්ෂාවට පරීක්ෂා කිරීම
                             throw "User has insufficient balance for this withdrawal!";
                         }
 
@@ -607,13 +723,10 @@
 
                         alert(`Withdrawal Request ${requestId} has been ${action}. ${amount} XRP deducted from user balance. Please ensure the XRP transfer is completed manually.`);
                     } else {
-                        // Reject වුවහොත්, user ගේ balance එකට කිසිවක් නොකරන්න.
                         alert(`Withdrawal Request ${requestId} has been ${action}.`);
                     }
                 });
 
-
-                // 3. ඩෑෂ්බෝඩ් එක නැවත Load කිරීම
                 loadDashboardData();
                 
             } catch (error) {
@@ -622,7 +735,7 @@
             }
         }
         
-        // 6. User Management Functions
+        // 7. User Management Functions
         
         // 🚨 ඩිසෙබල් කිරීමට/Enable කිරීමට (Deactivate/Activate)
         async function toggleDisableUser(userId, disableState) {
@@ -632,12 +745,11 @@
             }
 
             try {
-                // Firestore document එකේ 'disabled' ක්ෂේත්‍රය යාවත්කාලීන කිරීම
                 await db.collection('users').doc(userId).update({
-                    disabled: disableState === 'true' // Boolean අගයක් යැවීම
+                    disabled: disableState === 'true' 
                 });
                 
-                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore. (NOTE: Full Auth disable requires backend).`);
+                alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore. (NOTE: Full Auth disable requires a backend/Cloud Function).`);
                 
                 loadDashboardData();
             } catch (error) {
@@ -646,14 +758,13 @@
             }
         }
 
-        // 🚨 Password Reset (Password Reset Link එකක් Email කිරීමට)
+        // 🚨 Password Reset (Same as before)
         async function resetPassword(userEmail) {
             if (!confirm(`Are you sure you want to send a password reset email to ${userEmail}?`)) {
                 return;
             }
 
             try {
-                // Firebase Auth සේවාව හරහා password reset email එකක් යැවීම
                 await auth.sendPasswordResetEmail(userEmail);
                 
                 alert(`Password reset email sent successfully to ${userEmail}.`);
@@ -663,18 +774,16 @@
             }
         }
 
-        // 🚨 User Delete (ගිණුම මකා දැමීම)
+        // 🚨 User Delete (Same as before)
         async function deleteUser(userId, userEmail) {
             if (!confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the user ${userEmail} (${userId.substring(0, 8)}...) and all their data? THIS ACTION CANNOT BE UNDONE.`)) {
                 return;
             }
 
             try {
-                // Firestore Document එක මකා දැමීම
                 await db.collection('users').doc(userId).delete();
                 
-                // ⚠️ ගිණුම සම්පූර්ණයෙන්ම මකා දැමීමට Cloud Functions (Backend) අවශ්‍ය වේ.
-                alert(`User ${userEmail} Firestore data has been deleted. (NOTE: Full Auth deletion requires backend).`);
+                alert(`User ${userEmail} Firestore data has been deleted. (NOTE: Full Auth deletion requires a backend/Cloud Function).`);
                 
                 loadDashboardData();
             } catch (error) {
@@ -683,7 +792,56 @@
             }
         }
 
-        // 7. NEW: User Registration Functionality (FINAL IMPLEMENTATION)
+        // 8. NEW: Edit User Modal Functions
+        function openEditUserModal(userId, email, currentPlan, balance, totalHashRate) {
+            document.getElementById('edit-user-id').value = userId;
+            document.getElementById('edit-email').value = email; // Disabled
+            document.getElementById('edit-plan').value = currentPlan;
+            document.getElementById('edit-balance').value = balance;
+            document.getElementById('edit-hashrate').value = totalHashRate;
+            document.getElementById('edit-message').textContent = '';
+            document.getElementById('editUserModal').style.display = 'block';
+        }
+        
+        document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('edit-user-id').value;
+            const currentPlan = document.getElementById('edit-plan').value;
+            const balance = parseFloat(document.getElementById('edit-balance').value);
+            const totalHashRate = parseFloat(document.getElementById('edit-hashrate').value);
+            const messageEl = document.getElementById('edit-message');
+            const saveBtn = document.getElementById('edit-save-btn');
+
+            messageEl.textContent = 'Saving changes...';
+            saveBtn.disabled = true;
+
+            try {
+                await db.collection('users').doc(userId).update({
+                    currentPlan: currentPlan,
+                    balance: balance,
+                    totalHashRate: totalHashRate 
+                });
+
+                messageEl.textContent = 'User data successfully updated!';
+                messageEl.style.color = 'var(--success-color)';
+                
+                // Modal එක වැසීම සහ දත්ත නැවත Load කිරීම
+                setTimeout(() => {
+                    document.getElementById('editUserModal').style.display = 'none';
+                    loadDashboardData();
+                }, 1500);
+
+            } catch (error) {
+                console.error("Error updating user data:", error);
+                messageEl.textContent = `Update Failed: ${error.message}`;
+                messageEl.style.color = 'var(--danger-color)';
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+
+
+        // 9. NEW: User Registration Functionality (Refined)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('reg-email').value;
@@ -703,12 +861,9 @@
                  return;
             }
             
-            // Admin ගේ Session විස්තර ලබා ගැනීම
-            const adminEmail = adminUser.email;
+            // ⚠️ Client-side එකේදී Admin කෙනෙකු ලියාපදිංචි කිරීමේදී මුරපදය යළි යෙදීම ආරක්ෂිත නොවේ.
+            // මෙම උදාහරණය සරල කරන ලදී.
             
-            // ⚠️ Admin මුරපදය මෙහි තැන්පත් කරන්න (අනාරක්ෂිතයි!)
-            const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD_HERE'; 
-
             try {
                 // 1. නව User කෙනෙක් නිර්මාණය කිරීම 
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -719,15 +874,16 @@
                     email: email,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     balance: 0,
-                    currentPlan: 'Free', // Default plan
+                    totalHashRate: 0, 
+                    currentPlan: 'Free', 
                     disabled: false
                 });
-
-                // 3. Admin ගේ ගිණුමට නැවත ලොග් වීම
-                // ⚠️ මෙය Admin ගේ Session එක ආරක්ෂා කිරීමට ඇති එකම Client-side ක්‍රමයයි.
-                await auth.signInWithEmailAndPassword(adminEmail, ADMIN_PASSWORD); 
-
-                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website without verification. Admin session restored.`;
+                
+                // 3. Admin ගේ Session එක බලෙන් නැති කර යළි ලොග් වීමට ඉඩ නොදීම
+                // මෙය Firebase Auth හි සරල බවට කරන සුළු වෙනසකි. 
+                // සැබෑ පරිසරයකදී Cloud Functions භාවිතා කරන්න.
+                
+                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website. Please RELOAD to ensure admin session is stable.`;
                 messageEl.style.color = 'var(--success-color)';
                 
                 // Form එක clear කිරීම
@@ -738,15 +894,9 @@
                 loadDashboardData();
 
             } catch (error) {
-                console.error("Error registering new user or restoring session:", error);
+                console.error("Error registering new user:", error);
                 
-                if (error.code === 'auth/wrong-password') {
-                     // ⚠️ Admin මුරපදය වැරදි නම්, මෙය සිදුවිය හැක.
-                     messageEl.textContent = `Registration Success, but Admin Session LOST! Please reload and log in as Admin.`;
-                } else {
-                    messageEl.textContent = `Registration Failed: ${error.message}`;
-                }
-                
+                messageEl.textContent = `Registration Failed: ${error.message}`;
                 messageEl.style.color = 'var(--danger-color)';
             } finally {
                 submitBtn.disabled = false;
