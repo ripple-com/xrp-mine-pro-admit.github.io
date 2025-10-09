@@ -117,7 +117,7 @@
         /* Main Content */
         .container {
             padding: 30px;
-            max-width: 1400px; /* වගු තවත් විශාල කිරීමට */
+            max-width: 1400px; 
             margin: auto;
         }
 
@@ -186,6 +186,37 @@
             font-weight: 700;
         }
         
+        /* Search Box Style */
+        .search-container {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-container i {
+            font-size: 20px;
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        #user-search-input {
+            width: 100%;
+            max-width: 400px; 
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            background-color: #242424; 
+            color: var(--text-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        
+        #user-search-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+
         .data-table {
             width: 100%;
             border-collapse: separate; 
@@ -351,7 +382,6 @@
                 overflow-x: auto;
             }
             .data-table {
-                /* New width to accommodate the new column */
                 min-width: 1450px; 
             }
             .data-table th, .data-table td {
@@ -403,6 +433,8 @@
             <label for="edit-commission">Commission Rate (%):</label>
             <input type="number" id="edit-commission" min="0" max="50" step="0.01" required>
             <small style="color: #6c757d;">(Maximum allowed value is 50%)</small>
+            
+
             <p id="edit-message" style="margin-top: 15px; font-style: italic; color: var(--danger-color);"></p>
 
             <div class="modal-footer">
@@ -498,6 +530,11 @@
         </div>
 
         <h2 id="user-list-section"><i class="fas fa-users"></i> All Users</h2>
+        
+        <div class="search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" id="user-search-input" placeholder="Search by Email..." onkeyup="searchUsers()">
+        </div>
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
@@ -542,6 +579,9 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        
+        // ගෝලීය වශයෙන් usersලාගේ සම්පූර්ණ ලැයිස්තුව ගබඩා කිරීමට
+        let allUsersData = []; 
 
         // ⚠️ ඔබගේ පරිපාලක Email ලිපින මෙහි ඇතුළත් කරන්න.
         const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin2@xrpminepro.com"]; 
@@ -570,7 +610,8 @@
                 return;
             }
 
-            loadDashboardData();
+            // මුලින්ම සියලුම usersලා load කරන්න
+            loadDashboardData(true); 
         });
 
         // 3. Logout Functionality
@@ -595,148 +636,175 @@
                 hour12: false 
             }).replace(',', ''); 
         }
+        
+        // 5. User List Table එකට දත්ත ඇතුළු කරන වෙනම ශ්‍රිතයක්
+        function populateUserList(users) {
+            const userListTable = document.getElementById('user-list');
+            userListTable.innerHTML = ''; 
 
-        // 5. Main Data Loading Function
-        async function loadDashboardData() {
-            // Loading skeleton effects
-            document.getElementById('total-users').className = 'loading-skeleton';
-            document.getElementById('total-hashrate').className = 'loading-skeleton'; 
-            document.getElementById('pending-withdrawals').className = 'loading-skeleton';
-            document.getElementById('active-plans').className = 'loading-skeleton';
+            if (users.length === 0) {
+                userListTable.innerHTML = '<tr><td colspan="11" style="text-align: center;">No users found.</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const regDateTime = formatFirebaseTimestamp(user.createdAt);
+                const row = userListTable.insertRow();
+                row.innerHTML = `
+                    <td>${user.username || 'N/A'}</td>
+                    <td>${user.email || 'N/A'}<br><small style="color:#999;font-size:10px;">UID: ${user.id.substring(0, 8)}...</small></td>
+                    <td>${regDateTime}</td> 
+                    <td>${(user.totalHashRate || 0).toFixed(2)}</td>
+                    <td>${(user.balance || 0).toFixed(4)}</td>
+                    <td>${(user.dailyIncome || 0).toFixed(4)}</td>
+                    <td>${(user.commission || 0).toFixed(2)}%</td>
+                    <td>${user.currentPlan || 'Free'}</td>
+                    <td>${user.referrals || 0}</td>
+                    <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
+                    <td style="white-space: nowrap;">
+                        <button class="action-btn edit-btn" 
+                                onclick="openEditUserModal(
+                                    '${user.id}', 
+                                    '${user.email}', 
+                                    '${user.username.replace(/'/g, "\\'") || 'N/A'}', 
+                                    '${user.currentPlan || 'Free'}', 
+                                    ${user.balance || 0}, 
+                                    ${user.totalHashRate || 0}, 
+                                    ${user.referrals || 0},
+                                    ${user.dailyIncome || 0},
+                                    ${user.commission || 0}
+                                )">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
+                                onclick="toggleDisableUser('${user.id}', ${user.disabled ? 'false' : 'true'})">
+                            <i class="fas fa-user-${user.disabled ? 'check' : 'lock'}"></i> ${user.disabled ? 'Enable' : 'Disable'}
+                        </button>
+                        <button class="action-btn approve-btn" 
+                                onclick="resetPassword('${user.email}')">
+                            <i class="fas fa-key"></i> Reset Pass
+                        </button>
+                        <button class="action-btn reject-btn" 
+                                onclick="deleteUser('${user.id}', '${user.email}')">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </td>
+                `;
+            });
+        }
+
+        // 6. Main Data Loading Function (Force Reload සහිතව)
+        async function loadDashboardData(forceReload = false) {
             
-            // colspan 11 දක්වා වැඩි කර ඇත
-            document.getElementById('user-list').innerHTML = '<tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
-            document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; 
+            const searchInput = document.getElementById('user-search-input').value.trim();
+            // search box එක හිස් නම් පමණක් Firebase වෙතින් දත්ත නැවත ලබා ගන්න
+            if (allUsersData.length === 0 || forceReload) {
+                // Loading skeleton effects
+                document.getElementById('total-users').className = 'loading-skeleton';
+                document.getElementById('total-hashrate').className = 'loading-skeleton'; 
+                document.getElementById('pending-withdrawals').className = 'loading-skeleton';
+                document.getElementById('active-plans').className = 'loading-skeleton';
+                document.getElementById('user-list').innerHTML = '<tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
+                document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; 
 
-            try {
-                // --- A. Load User Data ---
-                const usersSnapshot = await db.collection('users').get();
-                const users = usersSnapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    disabled: doc.data().disabled || false, 
-                    totalHashRate: doc.data().totalHashRate || 0, 
-                    createdAt: doc.data().createdAt, 
-                    referrals: doc.data().referrals || 0,
-                    username: doc.data().username || 'N/A', 
-                    dailyIncome: doc.data().dailyIncome || 0.0000,
-                    // ⭐ Commission දත්ත ලබා ගැනීම ⭐
-                    commission: doc.data().commission || 0.00,
-                    // ⭐ අවසන් ⭐
-                    ...doc.data() 
-                }));
-                
-                // Update Dashboard Stats
-                document.getElementById('total-users').textContent = users.length;
-                document.getElementById('total-users').className = ''; 
-                
-                const totalHashRate = users.reduce((sum, user) => sum + (user.totalHashRate || 0), 0);
-                document.getElementById('total-hashrate').textContent = totalHashRate.toFixed(2); 
-                document.getElementById('total-hashrate').className = ''; 
-                
-                const activePlans = users.filter(u => u.currentPlan && u.currentPlan !== 'Free').length;
-                document.getElementById('active-plans').textContent = activePlans;
-                document.getElementById('active-plans').className = ''; 
-                
-                // Populate User List Table
-                const userListTable = document.getElementById('user-list');
-                userListTable.innerHTML = ''; 
-                
-                if (users.length === 0) {
-                    // colspan 11 දක්වා වැඩි කර ඇත
-                    userListTable.innerHTML = '<tr><td colspan="11" style="text-align: center;">No users found.</td></tr>';
-                } else {
-                    users.forEach(user => {
-                        const regDateTime = formatFirebaseTimestamp(user.createdAt);
-                        const row = userListTable.insertRow();
-                        row.innerHTML = `
-                            <td>${user.username || 'N/A'}</td>
-                            <td>${user.email || 'N/A'}<br><small style="color:#999;font-size:10px;">UID: ${user.id.substring(0, 8)}...</small></td>
-                            <td>${regDateTime}</td> 
-                            <td>${(user.totalHashRate || 0).toFixed(2)}</td>
-                            <td>${(user.balance || 0).toFixed(4)}</td>
-                            <td>${(user.dailyIncome || 0).toFixed(4)}</td>
-                            <td>${(user.commission || 0).toFixed(2)}%</td>
-                            <td>${user.currentPlan || 'Free'}</td>
-                            <td>${user.referrals || 0}</td>
-                            <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
-                            <td style="white-space: nowrap;">
-                                <button class="action-btn edit-btn" 
-                                        onclick="openEditUserModal(
-                                            '${user.id}', 
-                                            '${user.email}', 
-                                            '${user.username.replace(/'/g, "\\'") || 'N/A'}', 
-                                            '${user.currentPlan || 'Free'}', 
-                                            ${user.balance || 0}, 
-                                            ${user.totalHashRate || 0}, 
-                                            ${user.referrals || 0},
-                                            ${user.dailyIncome || 0},
-                                            ${user.commission || 0} // ⭐ නව Commission අගය යැවීම
-                                        )">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
-                                        onclick="toggleDisableUser('${user.id}', ${user.disabled ? 'false' : 'true'})">
-                                    <i class="fas fa-user-${user.disabled ? 'check' : 'lock'}"></i> ${user.disabled ? 'Enable' : 'Disable'}
-                                </button>
-                                <button class="action-btn approve-btn" 
-                                        onclick="resetPassword('${user.email}')">
-                                    <i class="fas fa-key"></i> Reset Pass
-                                </button>
-                                <button class="action-btn reject-btn" 
-                                        onclick="deleteUser('${user.id}', '${user.email}')">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
-                            </td>
-                        `;
-                    });
+                try {
+                    // --- A. Load User Data from Firestore ---
+                    const usersSnapshot = await db.collection('users').get();
+                    allUsersData = usersSnapshot.docs.map(doc => ({ 
+                        id: doc.id, 
+                        disabled: doc.data().disabled || false, 
+                        totalHashRate: doc.data().totalHashRate || 0, 
+                        createdAt: doc.data().createdAt, 
+                        referrals: doc.data().referrals || 0,
+                        username: doc.data().username || 'N/A', 
+                        dailyIncome: doc.data().dailyIncome || 0.0000,
+                        commission: doc.data().commission || 0.00,
+                        ...doc.data() 
+                    }));
+                    
+                    // Update Dashboard Stats
+                    document.getElementById('total-users').textContent = allUsersData.length;
+                    document.getElementById('total-users').className = ''; 
+                    
+                    const totalHashRate = allUsersData.reduce((sum, user) => sum + (user.totalHashRate || 0), 0);
+                    document.getElementById('total-hashrate').textContent = totalHashRate.toFixed(2); 
+                    document.getElementById('total-hashrate').className = ''; 
+                    
+                    const activePlans = allUsersData.filter(u => u.currentPlan && u.currentPlan !== 'Free').length;
+                    document.getElementById('active-plans').textContent = activePlans;
+                    document.getElementById('active-plans').className = ''; 
+                    
+                    // Populate User List Table
+                    populateUserList(allUsersData);
+
+
+                    // --- B. Load Withdrawal Requests ---
+                    const withdrawalSnapshot = await db.collection('withdrawal_requests')
+                                                       .where('status', '==', 'Pending') 
+                                                       .orderBy('createdAt', 'desc') 
+                                                       .get();
+                    const requests = withdrawalSnapshot.docs.map(doc => ({ 
+                        id: doc.id, 
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt 
+                    }));
+                    
+                    document.getElementById('pending-withdrawals').textContent = requests.length;
+                    document.getElementById('pending-withdrawals').className = ''; 
+
+                    const withdrawalListTable = document.getElementById('withdrawal-list');
+                    withdrawalListTable.innerHTML = ''; 
+                    
+                    if (requests.length === 0) {
+                        withdrawalListTable.innerHTML = '<tr><td colspan="6" style="text-align: center;">No pending withdrawal requests.</td></tr>';
+                    } else {
+                        requests.forEach(request => {
+                            const requestDateTime = formatFirebaseTimestamp(request.createdAt); 
+                            
+                            const row = withdrawalListTable.insertRow();
+                            row.innerHTML = `
+                                <td>${request.userEmail || 'N/A'}</td>
+                                <td>${request.amount.toFixed(4)} XRP</td>
+                                <td>${requestDateTime}</td> <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
+                                <td>${request.tag || 'N/A'}</td>
+                                <td>
+                                    <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Approve</button>
+                                    <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Reject</button>
+                                </td>
+                            `;
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error("Error loading dashboard data:", error);
+                    document.getElementById('user-list').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
+                    document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; 
                 }
-
-
-                // --- B. Load Withdrawal Requests (No changes needed) ---
-                const withdrawalSnapshot = await db.collection('withdrawal_requests')
-                                                   .where('status', '==', 'Pending') 
-                                                   .orderBy('createdAt', 'desc') 
-                                                   .get();
-                const requests = withdrawalSnapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data(),
-                    createdAt: doc.data().createdAt 
-                }));
-                
-                document.getElementById('pending-withdrawals').textContent = requests.length;
-                document.getElementById('pending-withdrawals').className = ''; 
-
-                const withdrawalListTable = document.getElementById('withdrawal-list');
-                withdrawalListTable.innerHTML = ''; 
-                
-                if (requests.length === 0) {
-                    withdrawalListTable.innerHTML = '<tr><td colspan="6" style="text-align: center;">No pending withdrawal requests.</td></tr>';
-                } else {
-                    requests.forEach(request => {
-                        const requestDateTime = formatFirebaseTimestamp(request.createdAt); 
-                        
-                        const row = withdrawalListTable.insertRow();
-                        row.innerHTML = `
-                            <td>${request.userEmail || 'N/A'}</td>
-                            <td>${request.amount.toFixed(4)} XRP</td>
-                            <td>${requestDateTime}</td> <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
-                            <td>${request.tag || 'N/A'}</td>
-                            <td>
-                                <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Approve</button>
-                                <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Reject</button>
-                            </td>
-                        `;
-                    });
-                }
-                
-            } catch (error) {
-                console.error("Error loading dashboard data:", error);
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
-                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; 
+            } else {
+                 // දත්ත reload නොකළේ නම්, දැනට ගබඩා කර ඇති දත්ත පෙන්වන්න
+                 populateUserList(allUsersData);
             }
         }
         
-        // 6. Withdrawal Handling Function (No change needed)
+        // 7. Search Users Function
+        function searchUsers() {
+            const searchInput = document.getElementById('user-search-input').value.toLowerCase().trim();
+
+            if (searchInput === '') {
+                // සෙවුම් ක්ෂේත්‍රය හිස් නම්, සියලුම usersලා පෙන්වන්න
+                populateUserList(allUsersData);
+                return;
+            }
+
+            // ගබඩා කර ඇති සම්පූර්ණ දත්ත ලැයිස්තුවෙන් සෙවීම
+            const filteredUsers = allUsersData.filter(user => 
+                user.email && user.email.toLowerCase().includes(searchInput)
+            );
+
+            populateUserList(filteredUsers);
+        }
+
+        // 8. Withdrawal Handling Function (No change needed)
         async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
@@ -748,13 +816,11 @@
                     
                     const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
 
-                    // 1. Withdrawal Request Status යාවත්කාලීන කිරීම
                     transaction.update(withdrawalRef, {
                         status: transactionStatus, 
                         adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    // 2. Transaction වාර්තාව එක් කිරීම
                     const newTransactionRef = db.collection('transactions').doc();
                     
                     transaction.set(newTransactionRef, {
@@ -771,7 +837,6 @@
                     
                     
                     if (action === 'Approved') {
-                        // 3. පරිශීලකයාගේ ශේෂය යාවත්කාලීන කිරීම (Approved නම්)
                         const userRef = db.collection('users').doc(userId);
                         const userDoc = await transaction.get(userRef);
 
@@ -796,7 +861,8 @@
                     }
                 });
 
-                loadDashboardData();
+                // දත්ත නැවත Load කරන්න (forceReload අවශ්‍ය නොවේ, මන්ද මෙහිදී users update නොවේ)
+                loadDashboardData(true); 
                 
             } catch (error) {
                 console.error(`Error handling withdrawal ${action}:`, error);
@@ -804,7 +870,7 @@
             }
         }
         
-        // 7. User Management Functions (No change needed)
+        // 9. User Management Functions
         async function toggleDisableUser(userId, disableState) {
             const action = disableState === 'true' ? 'Disable' : 'Enable';
             if (!confirm(`Are you sure you want to ${action} account for user ${userId.substring(0, 8)}...?`)) {
@@ -818,7 +884,8 @@
                 
                 alert(`User ${userId.substring(0, 8)}... account has been ${action}d in Firestore.`);
                 
-                loadDashboardData();
+                // දත්ත නැවත Load කරන්න
+                loadDashboardData(true); 
             } catch (error) {
                 console.error(`Error toggling disable state:`, error);
                 alert(`Failed to ${action} account: ` + error.message);
@@ -850,15 +917,15 @@
                 
                 alert(`User ${userEmail} Firestore data has been deleted.`);
                 
-                loadDashboardData();
+                // දත්ත නැවත Load කරන්න
+                loadDashboardData(true); 
             } catch (error) {
                 console.error(`Error deleting user:`, error);
                 alert(`Failed to delete user: ` + error.message);
             }
         }
 
-        // 8. Edit User Modal Functions (Edit User Data)
-        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත (Commission පරාමිතිය එක් කර ඇත) ⭐
+        // 10. Edit User Modal Functions
         function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals, dailyIncome, commission) {
             document.getElementById('edit-user-id').value = userId;
             document.getElementById('edit-email').value = email; 
@@ -868,7 +935,7 @@
             document.getElementById('edit-hashrate').value = totalHashRate;
             document.getElementById('edit-referrals').value = totalReferrals;
             document.getElementById('edit-daily-income').value = dailyIncome; 
-            document.getElementById('edit-commission').value = commission; // ⭐ නව ක්ෂේත්‍රය
+            document.getElementById('edit-commission').value = commission;
             document.getElementById('edit-message').textContent = '';
             document.getElementById('editUserModal').style.display = 'block';
         }
@@ -882,9 +949,7 @@
             const totalHashRate = parseFloat(document.getElementById('edit-hashrate').value);
             const totalReferrals = parseInt(document.getElementById('edit-referrals').value, 10); 
             const dailyIncome = parseFloat(document.getElementById('edit-daily-income').value);
-            // ⭐ නව Commission අගය ලබා ගැනීම ⭐
             const commission = parseFloat(document.getElementById('edit-commission').value); 
-            // ⭐ අවසන් ⭐
             const messageEl = document.getElementById('edit-message');
             const saveBtn = document.getElementById('edit-save-btn');
 
@@ -899,19 +964,16 @@
                  return;
             }
             
-            // ⭐ Commission Validation එක ⭐
             if (isNaN(commission) || commission < 0 || commission > 50) {
                  messageEl.textContent = 'Commission must be a number between 0% and 50%.';
                  messageEl.style.color = 'var(--danger-color)';
                  return;
             }
-            // ⭐ අවසන් ⭐
             
             messageEl.textContent = 'Saving changes...';
             saveBtn.disabled = true;
 
             try {
-                // ⭐ Firestore යාවත්කාලීන කිරීමට commission ක්ෂේත්‍රය එකතු කර ඇත ⭐
                 await db.collection('users').doc(userId).update({
                     username: username,
                     currentPlan: currentPlan,
@@ -919,16 +981,16 @@
                     totalHashRate: totalHashRate,
                     referrals: totalReferrals,
                     dailyIncome: dailyIncome,
-                    commission: commission // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
+                    commission: commission 
                 });
-                // ⭐ අවසන් ⭐
 
                 messageEl.textContent = 'User data successfully updated!';
                 messageEl.style.color = 'var(--success-color)';
                 
                 setTimeout(() => {
                     document.getElementById('editUserModal').style.display = 'none';
-                    loadDashboardData();
+                    // දත්ත නැවත Load කරන්න
+                    loadDashboardData(true); 
                 }, 1500);
 
             } catch (error) {
@@ -941,7 +1003,7 @@
         });
 
 
-        // 9. User Registration Functionality (Add User)
+        // 11. User Registration Functionality (Add User)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('reg-username').value.trim();
@@ -969,11 +1031,9 @@
             }
             
             try {
-                // 1. නව User කෙනෙක් නිර්මාණය කිරීම 
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const newUser = userCredential.user;
 
-                // 2. Firestore හි 'users' Collection එකට Entry එකක් එක් කිරීම
                 await db.collection('users').doc(newUser.uid).set({
                     email: email,
                     username: username, 
@@ -984,22 +1044,19 @@
                     disabled: false,
                     referrals: 0,
                     dailyIncome: 0.0000,
-                    // ⭐ නව පරිශීලකයින් සඳහා පෙරනිමි Commission (0%) ⭐
                     commission: 0.00 
-                    // ⭐ අවසන් ⭐
                 });
                 
                 
                 messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website.`;
                 messageEl.style.color = 'var(--success-color)';
                 
-                // Form එක clear කිරීම
                 document.getElementById('reg-username').value = '';
                 document.getElementById('reg-email').value = '';
                 document.getElementById('reg-password').value = '';
                 
-                // 4. Dashboard දත්ත නැවත Load කිරීම
-                loadDashboardData();
+                // Dashboard දත්ත නැවත Load කිරීම
+                loadDashboardData(true);
 
             } catch (error) {
                 console.error("Error registering new user:", error);
