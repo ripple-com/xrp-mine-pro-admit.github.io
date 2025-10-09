@@ -351,7 +351,8 @@
                 overflow-x: auto;
             }
             .data-table {
-                min-width: 1000px; 
+                /* මේක ඉවත් කිරීමෙන් හෝ කුඩා කිරීමෙන් තිරයට වඩා විශාල වීම පාලනය කළ හැක */
+                min-width: 1100px; /* Referral තීරුව සඳහා විශාල කර ඇත */
             }
             .data-table th, .data-table td {
                 padding: 8px;
@@ -389,7 +390,9 @@
             
             <label for="edit-hashrate">Total Hash Rate (TH/s):</label>
             <input type="number" id="edit-hashrate" step="0.01" required>
-
+            
+            <label for="edit-referrals">Total Referrals:</label>
+            <input type="number" id="edit-referrals" step="1" required>
             <p id="edit-message" style="margin-top: 15px; font-style: italic; color: var(--danger-color);"></p>
 
             <div class="modal-footer">
@@ -488,12 +491,13 @@
                         <th>Hash Rate (TH/s)</th> 
                         <th>Balance (XRP)</th>
                         <th>Plan</th>
+                        <th>Referrals</th>
                         <th>Status</th>
                         <th>Admin Actions</th>
                     </tr>
                 </thead>
                 <tbody id="user-list">
-                    <tr><td colspan="7" style="text-align: center;" class="loading-text">Loading users...</td></tr>
+                    <tr><td colspan="8" style="text-align: center;" class="loading-text">Loading users...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -583,7 +587,8 @@
             document.getElementById('pending-withdrawals').className = 'loading-skeleton';
             document.getElementById('active-plans').className = 'loading-skeleton';
             
-            document.getElementById('user-list').innerHTML = '<tr><td colspan="7" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
+            // colspan 7 වෙනුවට 8 දමා ඇත
+            document.getElementById('user-list').innerHTML = '<tr><td colspan="8" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
             document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; // colspan 6
 
             try {
@@ -594,6 +599,9 @@
                     disabled: doc.data().disabled || false, 
                     totalHashRate: doc.data().totalHashRate || 0, 
                     createdAt: doc.data().createdAt, 
+                    // ⭐ නව Referral දත්ත ලබා ගැනීම ⭐
+                    referrals: doc.data().referrals || 0,
+                    // ⭐ අවසන් ⭐
                     ...doc.data() 
                 }));
                 
@@ -614,7 +622,8 @@
                 userListTable.innerHTML = ''; 
                 
                 if (users.length === 0) {
-                    userListTable.innerHTML = '<tr><td colspan="7" style="text-align: center;">No users found.</td></tr>';
+                    // colspan 7 වෙනුවට 8 දමා ඇත
+                    userListTable.innerHTML = '<tr><td colspan="8" style="text-align: center;">No users found.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const regDateTime = formatFirebaseTimestamp(user.createdAt);
@@ -625,10 +634,11 @@
                             <td>${(user.totalHashRate || 0).toFixed(2)}</td>
                             <td>${(user.balance || 0).toFixed(4)}</td>
                             <td>${user.currentPlan || 'Free'}</td>
+                            <td>${user.referrals || 0}</td>
                             <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
                             <td style="white-space: nowrap;">
                                 <button class="action-btn edit-btn" 
-                                        onclick="openEditUserModal('${user.id}', '${user.email}', '${user.currentPlan || 'Free'}', ${user.balance || 0}, ${user.totalHashRate || 0})">
+                                        onclick="openEditUserModal('${user.id}', '${user.email}', '${user.currentPlan || 'Free'}', ${user.balance || 0}, ${user.totalHashRate || 0}, ${user.referrals || 0})">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
@@ -689,7 +699,8 @@
                 
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
+                // colspan 7 වෙනුවට 8 දමා ඇත
+                document.getElementById('user-list').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
                 document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; // colspan 6
             }
         }
@@ -825,12 +836,14 @@
         }
 
         // 8. Edit User Modal Functions (Edit User Data)
-        function openEditUserModal(userId, email, currentPlan, balance, totalHashRate) {
+        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත ⭐
+        function openEditUserModal(userId, email, currentPlan, balance, totalHashRate, totalReferrals) {
             document.getElementById('edit-user-id').value = userId;
             document.getElementById('edit-email').value = email; 
             document.getElementById('edit-plan').value = currentPlan;
             document.getElementById('edit-balance').value = balance;
             document.getElementById('edit-hashrate').value = totalHashRate;
+            document.getElementById('edit-referrals').value = totalReferrals; // ⭐ නව ක්ෂේත්‍රය
             document.getElementById('edit-message').textContent = '';
             document.getElementById('editUserModal').style.display = 'block';
         }
@@ -841,6 +854,9 @@
             const currentPlan = document.getElementById('edit-plan').value;
             const balance = parseFloat(document.getElementById('edit-balance').value);
             const totalHashRate = parseFloat(document.getElementById('edit-hashrate').value);
+            // ⭐ නව Referral අගය ලබා ගැනීම ⭐
+            const totalReferrals = parseInt(document.getElementById('edit-referrals').value, 10); 
+            // ⭐ අවසන් ⭐
             const messageEl = document.getElementById('edit-message');
             const saveBtn = document.getElementById('edit-save-btn');
 
@@ -848,11 +864,14 @@
             saveBtn.disabled = true;
 
             try {
+                // ⭐ Firestore යාවත්කාලීන කිරීමට referral ක්ෂේත්‍රය එකතු කර ඇත ⭐
                 await db.collection('users').doc(userId).update({
                     currentPlan: currentPlan,
                     balance: balance,
-                    totalHashRate: totalHashRate 
+                    totalHashRate: totalHashRate,
+                    referrals: totalReferrals // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
                 });
+                // ⭐ අවසන් ⭐
 
                 messageEl.textContent = 'User data successfully updated!';
                 messageEl.style.color = 'var(--success-color)';
@@ -904,7 +923,8 @@
                     balance: 0,
                     totalHashRate: 0, 
                     currentPlan: 'Free', 
-                    disabled: false
+                    disabled: false,
+                    referrals: 0 // ⭐ නව පරිශීලකයින් සඳහා පෙරනිමි referral ගණන
                 });
                 
                 // 3. දැනට ලොග් වී සිටින Admin ගේ Session එක නැති නොකිරීමට, 
