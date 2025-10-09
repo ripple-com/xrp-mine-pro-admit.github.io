@@ -279,7 +279,7 @@
 
         .modal-content {
             background-color: var(--bg-color);
-            margin: 10% auto; 
+            margin: 5% auto; /* මෝඩලය තිරයේ මධ්‍යයට ගෙන ඒමට වැඩි කර ඇත */
             padding: 30px;
             border: 1px solid var(--primary-color);
             width: 80%; 
@@ -351,8 +351,8 @@
                 overflow-x: auto;
             }
             .data-table {
-                /* Referral තීරුව සහ User Name තීරුව සඳහා විශාල කර ඇත */
-                min-width: 1200px; 
+                /* User Name සහ Daily Income තීරුව සඳහා විශාල කර ඇත */
+                min-width: 1350px; 
             }
             .data-table th, .data-table td {
                 padding: 8px;
@@ -384,6 +384,7 @@
             
             <label for="edit-username">User Name:</label>
             <input type="text" id="edit-username" required>
+            
             <label for="edit-plan">Current Plan:</label>
             <input type="text" id="edit-plan" required>
 
@@ -395,7 +396,9 @@
             
             <label for="edit-referrals">Total Referrals:</label>
             <input type="number" id="edit-referrals" step="1" required>
-
+            
+            <label for="edit-daily-income">Estimated Daily Income (XRP):</label>
+            <input type="number" id="edit-daily-income" step="0.0001" required>
             <p id="edit-message" style="margin-top: 15px; font-style: italic; color: var(--danger-color);"></p>
 
             <div class="modal-footer">
@@ -495,10 +498,12 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>User Name</th> <th>Email / UID</th>
+                        <th>User Name</th> 
+                        <th>Email / UID</th>
                         <th>Reg. Date/Time</th> 
                         <th>Hash Rate (TH/s)</th> 
                         <th>Balance (XRP)</th>
+                        <th>Daily Income (XRP)</th> 
                         <th>Plan</th>
                         <th>Referrals</th>
                         <th>Status</th>
@@ -506,7 +511,7 @@
                     </tr>
                 </thead>
                 <tbody id="user-list">
-                    <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading users...</td></tr>
+                    <tr><td colspan="10" style="text-align: center;" class="loading-text">Loading users...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -525,7 +530,7 @@
             projectId: "xrp-mine-pro",
             storageBucket: "xrp-mine-pro.appspot.com",
             messagingSenderId: "424665736685",
-            appId: "1:424665736685:web:21ba6c17e4d395a72933e3" // (Changed to a unique dummy ID for safety)
+            appId: "1:424665736685:web:21ba6c17e4d395a72933e3" 
         };
         
         // 1. Firebase Initialization
@@ -534,7 +539,7 @@
         const db = firebase.firestore();
 
         // ⚠️ ඔබගේ පරිපාලක Email ලිපින මෙහි ඇතුළත් කරන්න.
-        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin@xrpminepro.com"]; 
+        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin2@xrpminepro.com"]; 
         const ADMIN_LOGIN_PAGE = 'admin_login.html'; // Admin Login Page එකේ නම
 
         // --- Side Menu JavaScript ---
@@ -596,8 +601,8 @@
             document.getElementById('pending-withdrawals').className = 'loading-skeleton';
             document.getElementById('active-plans').className = 'loading-skeleton';
             
-            // colspan 9 දක්වා වැඩි කර ඇත
-            document.getElementById('user-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
+            // colspan 10 දක්වා වැඩි කර ඇත
+            document.getElementById('user-list').innerHTML = '<tr><td colspan="10" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
             document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; 
 
             try {
@@ -609,8 +614,9 @@
                     totalHashRate: doc.data().totalHashRate || 0, 
                     createdAt: doc.data().createdAt, 
                     referrals: doc.data().referrals || 0,
-                    // ⭐ User Name දත්ත ලබා ගැනීම ⭐
                     username: doc.data().username || 'N/A', 
+                    // ⭐ Daily Income දත්ත ලබා ගැනීම ⭐
+                    dailyIncome: doc.data().dailyIncome || 0.0000,
                     // ⭐ අවසන් ⭐
                     ...doc.data() 
                 }));
@@ -632,8 +638,8 @@
                 userListTable.innerHTML = ''; 
                 
                 if (users.length === 0) {
-                    // colspan 9 දක්වා වැඩි කර ඇත
-                    userListTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No users found.</td></tr>';
+                    // colspan 10 දක්වා වැඩි කර ඇත
+                    userListTable.innerHTML = '<tr><td colspan="10" style="text-align: center;">No users found.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const regDateTime = formatFirebaseTimestamp(user.createdAt);
@@ -644,12 +650,22 @@
                             <td>${regDateTime}</td> 
                             <td>${(user.totalHashRate || 0).toFixed(2)}</td>
                             <td>${(user.balance || 0).toFixed(4)}</td>
+                            <td>${(user.dailyIncome || 0).toFixed(4)}</td>
                             <td>${user.currentPlan || 'Free'}</td>
                             <td>${user.referrals || 0}</td>
                             <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
                             <td style="white-space: nowrap;">
                                 <button class="action-btn edit-btn" 
-                                        onclick="openEditUserModal('${user.id}', '${user.email}', '${user.username.replace(/'/g, "\\'") || 'N/A'}', '${user.currentPlan || 'Free'}', ${user.balance || 0}, ${user.totalHashRate || 0}, ${user.referrals || 0})">
+                                        onclick="openEditUserModal(
+                                            '${user.id}', 
+                                            '${user.email}', 
+                                            '${user.username.replace(/'/g, "\\'") || 'N/A'}', 
+                                            '${user.currentPlan || 'Free'}', 
+                                            ${user.balance || 0}, 
+                                            ${user.totalHashRate || 0}, 
+                                            ${user.referrals || 0},
+                                            ${user.dailyIncome || 0} // ⭐ නව Daily Income අගය යැවීම
+                                        )">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
@@ -709,12 +725,12 @@
                 
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
+                document.getElementById('user-list').innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
                 document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; 
             }
         }
         
-        // 6. Withdrawal Handling Function
+        // 6. Withdrawal Handling Function (No change needed)
         async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
@@ -782,7 +798,7 @@
             }
         }
         
-        // 7. User Management Functions
+        // 7. User Management Functions (No change needed)
         
         // 🚨 Account Disable/Enable (Deactivate/Activate)
         async function toggleDisableUser(userId, disableState) {
@@ -841,15 +857,16 @@
         }
 
         // 8. Edit User Modal Functions (Edit User Data)
-        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත (User Name පරාමිතිය එක් කර ඇත) ⭐
-        function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals) {
+        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත (Daily Income පරාමිතිය එක් කර ඇත) ⭐
+        function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals, dailyIncome) {
             document.getElementById('edit-user-id').value = userId;
             document.getElementById('edit-email').value = email; 
-            document.getElementById('edit-username').value = username; // ⭐ නව ක්ෂේත්‍රය
+            document.getElementById('edit-username').value = username; 
             document.getElementById('edit-plan').value = currentPlan;
             document.getElementById('edit-balance').value = balance;
             document.getElementById('edit-hashrate').value = totalHashRate;
             document.getElementById('edit-referrals').value = totalReferrals;
+            document.getElementById('edit-daily-income').value = dailyIncome; // ⭐ නව ක්ෂේත්‍රය
             document.getElementById('edit-message').textContent = '';
             document.getElementById('editUserModal').style.display = 'block';
         }
@@ -857,13 +874,14 @@
         document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const userId = document.getElementById('edit-user-id').value;
-            // ⭐ නව User Name අගය ලබා ගැනීම ⭐
             const username = document.getElementById('edit-username').value.trim(); 
-            // ⭐ අවසන් ⭐
             const currentPlan = document.getElementById('edit-plan').value;
             const balance = parseFloat(document.getElementById('edit-balance').value);
             const totalHashRate = parseFloat(document.getElementById('edit-hashrate').value);
             const totalReferrals = parseInt(document.getElementById('edit-referrals').value, 10); 
+            // ⭐ නව Estimated Daily Income අගය ලබා ගැනීම ⭐
+            const dailyIncome = parseFloat(document.getElementById('edit-daily-income').value);
+            // ⭐ අවසන් ⭐
             const messageEl = document.getElementById('edit-message');
             const saveBtn = document.getElementById('edit-save-btn');
 
@@ -872,18 +890,24 @@
                 messageEl.style.color = 'var(--danger-color)';
                 return;
             }
+            if (isNaN(dailyIncome) || dailyIncome < 0) {
+                 messageEl.textContent = 'Daily Income must be a valid positive number.';
+                 messageEl.style.color = 'var(--danger-color)';
+                 return;
+            }
             
             messageEl.textContent = 'Saving changes...';
             saveBtn.disabled = true;
 
             try {
-                // ⭐ Firestore යාවත්කාලීන කිරීමට username ක්ෂේත්‍රය එකතු කර ඇත ⭐
+                // ⭐ Firestore යාවත්කාලීන කිරීමට dailyIncome ක්ෂේත්‍රය එකතු කර ඇත ⭐
                 await db.collection('users').doc(userId).update({
-                    username: username, // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
+                    username: username,
                     currentPlan: currentPlan,
                     balance: balance,
                     totalHashRate: totalHashRate,
-                    referrals: totalReferrals 
+                    referrals: totalReferrals,
+                    dailyIncome: dailyIncome // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
                 });
                 // ⭐ අවසන් ⭐
 
@@ -908,9 +932,7 @@
         // 9. User Registration Functionality (Add User)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            // ⭐ නව User Name අගය ලබා ගැනීම ⭐
             const username = document.getElementById('reg-username').value.trim();
-            // ⭐ අවසන් ⭐
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
             const messageEl = document.getElementById('reg-message');
@@ -942,15 +964,14 @@
                 // 2. Firestore හි 'users' Collection එකට Entry එකක් එක් කිරීම
                 await db.collection('users').doc(newUser.uid).set({
                     email: email,
-                    // ⭐ නව username ක්ෂේත්‍රය එක් කර ඇත ⭐
                     username: username, 
-                    // ⭐ අවසන් ⭐
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     balance: 0,
                     totalHashRate: 0, 
                     currentPlan: 'Free', 
                     disabled: false,
-                    referrals: 0 
+                    referrals: 0,
+                    dailyIncome: 0.0000 // ⭐ නව පරිශීලකයින් සඳහා පෙරනිමි Daily Income 
                 });
                 
                 
