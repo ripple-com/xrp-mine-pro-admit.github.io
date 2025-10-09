@@ -117,7 +117,7 @@
         /* Main Content */
         .container {
             padding: 30px;
-            max-width: 1300px;
+            max-width: 1400px; /* වගු තවත් විශාල කිරීමට */
             margin: auto;
         }
 
@@ -279,7 +279,7 @@
 
         .modal-content {
             background-color: var(--bg-color);
-            margin: 5% auto; /* මෝඩලය තිරයේ මධ්‍යයට ගෙන ඒමට වැඩි කර ඇත */
+            margin: 5% auto; 
             padding: 30px;
             border: 1px solid var(--primary-color);
             width: 80%; 
@@ -351,8 +351,8 @@
                 overflow-x: auto;
             }
             .data-table {
-                /* User Name සහ Daily Income තීරුව සඳහා විශාල කර ඇත */
-                min-width: 1350px; 
+                /* New width to accommodate the new column */
+                min-width: 1450px; 
             }
             .data-table th, .data-table td {
                 padding: 8px;
@@ -399,6 +399,10 @@
             
             <label for="edit-daily-income">Estimated Daily Income (XRP):</label>
             <input type="number" id="edit-daily-income" step="0.0001" required>
+            
+            <label for="edit-commission">Commission Rate (%):</label>
+            <input type="number" id="edit-commission" min="0" max="50" step="0.01" required>
+            <small style="color: #6c757d;">(Maximum allowed value is 50%)</small>
             <p id="edit-message" style="margin-top: 15px; font-style: italic; color: var(--danger-color);"></p>
 
             <div class="modal-footer">
@@ -504,6 +508,7 @@
                         <th>Hash Rate (TH/s)</th> 
                         <th>Balance (XRP)</th>
                         <th>Daily Income (XRP)</th> 
+                        <th>Commission (%)</th> 
                         <th>Plan</th>
                         <th>Referrals</th>
                         <th>Status</th>
@@ -511,7 +516,7 @@
                     </tr>
                 </thead>
                 <tbody id="user-list">
-                    <tr><td colspan="10" style="text-align: center;" class="loading-text">Loading users...</td></tr>
+                    <tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -540,7 +545,7 @@
 
         // ⚠️ ඔබගේ පරිපාලක Email ලිපින මෙහි ඇතුළත් කරන්න.
         const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin2@xrpminepro.com"]; 
-        const ADMIN_LOGIN_PAGE = 'admin_login.html'; // Admin Login Page එකේ නම
+        const ADMIN_LOGIN_PAGE = 'admin_login.html'; 
 
         // --- Side Menu JavaScript ---
         function openNav() {
@@ -554,7 +559,6 @@
         // 2. Auth Guard: Admin Check
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
-                // Login page වෙත යොමු කරන්න
                 window.location.href = ADMIN_LOGIN_PAGE; 
                 return;
             }
@@ -566,7 +570,6 @@
                 return;
             }
 
-            // Admin නම්, දත්ත Load කරන්න
             loadDashboardData();
         });
 
@@ -601,8 +604,8 @@
             document.getElementById('pending-withdrawals').className = 'loading-skeleton';
             document.getElementById('active-plans').className = 'loading-skeleton';
             
-            // colspan 10 දක්වා වැඩි කර ඇත
-            document.getElementById('user-list').innerHTML = '<tr><td colspan="10" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
+            // colspan 11 දක්වා වැඩි කර ඇත
+            document.getElementById('user-list').innerHTML = '<tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
             document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; 
 
             try {
@@ -615,8 +618,9 @@
                     createdAt: doc.data().createdAt, 
                     referrals: doc.data().referrals || 0,
                     username: doc.data().username || 'N/A', 
-                    // ⭐ Daily Income දත්ත ලබා ගැනීම ⭐
                     dailyIncome: doc.data().dailyIncome || 0.0000,
+                    // ⭐ Commission දත්ත ලබා ගැනීම ⭐
+                    commission: doc.data().commission || 0.00,
                     // ⭐ අවසන් ⭐
                     ...doc.data() 
                 }));
@@ -638,8 +642,8 @@
                 userListTable.innerHTML = ''; 
                 
                 if (users.length === 0) {
-                    // colspan 10 දක්වා වැඩි කර ඇත
-                    userListTable.innerHTML = '<tr><td colspan="10" style="text-align: center;">No users found.</td></tr>';
+                    // colspan 11 දක්වා වැඩි කර ඇත
+                    userListTable.innerHTML = '<tr><td colspan="11" style="text-align: center;">No users found.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const regDateTime = formatFirebaseTimestamp(user.createdAt);
@@ -651,6 +655,7 @@
                             <td>${(user.totalHashRate || 0).toFixed(2)}</td>
                             <td>${(user.balance || 0).toFixed(4)}</td>
                             <td>${(user.dailyIncome || 0).toFixed(4)}</td>
+                            <td>${(user.commission || 0).toFixed(2)}%</td>
                             <td>${user.currentPlan || 'Free'}</td>
                             <td>${user.referrals || 0}</td>
                             <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
@@ -664,7 +669,8 @@
                                             ${user.balance || 0}, 
                                             ${user.totalHashRate || 0}, 
                                             ${user.referrals || 0},
-                                            ${user.dailyIncome || 0} // ⭐ නව Daily Income අගය යැවීම
+                                            ${user.dailyIncome || 0},
+                                            ${user.commission || 0} // ⭐ නව Commission අගය යැවීම
                                         )">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
@@ -686,7 +692,7 @@
                 }
 
 
-                // --- B. Load Withdrawal Requests ---
+                // --- B. Load Withdrawal Requests (No changes needed) ---
                 const withdrawalSnapshot = await db.collection('withdrawal_requests')
                                                    .where('status', '==', 'Pending') 
                                                    .orderBy('createdAt', 'desc') 
@@ -725,7 +731,7 @@
                 
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
+                document.getElementById('user-list').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
                 document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; 
             }
         }
@@ -799,8 +805,6 @@
         }
         
         // 7. User Management Functions (No change needed)
-        
-        // 🚨 Account Disable/Enable (Deactivate/Activate)
         async function toggleDisableUser(userId, disableState) {
             const action = disableState === 'true' ? 'Disable' : 'Enable';
             if (!confirm(`Are you sure you want to ${action} account for user ${userId.substring(0, 8)}...?`)) {
@@ -821,7 +825,6 @@
             }
         }
 
-        // 🚨 Password Reset (Rest Password)
         async function resetPassword(userEmail) {
             if (!confirm(`Are you sure you want to send a password reset email to ${userEmail}?`)) {
                 return;
@@ -837,14 +840,12 @@
             }
         }
 
-        // 🚨 User Delete
         async function deleteUser(userId, userEmail) {
             if (!confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the user ${userEmail} and all their data? THIS ACTION CANNOT BE UNDONE. (NOTE: Full Auth deletion requires a Cloud Function).`)) {
                 return;
             }
 
             try {
-                // Firestore User document එක මකා දමයි.
                 await db.collection('users').doc(userId).delete();
                 
                 alert(`User ${userEmail} Firestore data has been deleted.`);
@@ -857,8 +858,8 @@
         }
 
         // 8. Edit User Modal Functions (Edit User Data)
-        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත (Daily Income පරාමිතිය එක් කර ඇත) ⭐
-        function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals, dailyIncome) {
+        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත (Commission පරාමිතිය එක් කර ඇත) ⭐
+        function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals, dailyIncome, commission) {
             document.getElementById('edit-user-id').value = userId;
             document.getElementById('edit-email').value = email; 
             document.getElementById('edit-username').value = username; 
@@ -866,7 +867,8 @@
             document.getElementById('edit-balance').value = balance;
             document.getElementById('edit-hashrate').value = totalHashRate;
             document.getElementById('edit-referrals').value = totalReferrals;
-            document.getElementById('edit-daily-income').value = dailyIncome; // ⭐ නව ක්ෂේත්‍රය
+            document.getElementById('edit-daily-income').value = dailyIncome; 
+            document.getElementById('edit-commission').value = commission; // ⭐ නව ක්ෂේත්‍රය
             document.getElementById('edit-message').textContent = '';
             document.getElementById('editUserModal').style.display = 'block';
         }
@@ -879,8 +881,9 @@
             const balance = parseFloat(document.getElementById('edit-balance').value);
             const totalHashRate = parseFloat(document.getElementById('edit-hashrate').value);
             const totalReferrals = parseInt(document.getElementById('edit-referrals').value, 10); 
-            // ⭐ නව Estimated Daily Income අගය ලබා ගැනීම ⭐
             const dailyIncome = parseFloat(document.getElementById('edit-daily-income').value);
+            // ⭐ නව Commission අගය ලබා ගැනීම ⭐
+            const commission = parseFloat(document.getElementById('edit-commission').value); 
             // ⭐ අවසන් ⭐
             const messageEl = document.getElementById('edit-message');
             const saveBtn = document.getElementById('edit-save-btn');
@@ -896,18 +899,27 @@
                  return;
             }
             
+            // ⭐ Commission Validation එක ⭐
+            if (isNaN(commission) || commission < 0 || commission > 50) {
+                 messageEl.textContent = 'Commission must be a number between 0% and 50%.';
+                 messageEl.style.color = 'var(--danger-color)';
+                 return;
+            }
+            // ⭐ අවසන් ⭐
+            
             messageEl.textContent = 'Saving changes...';
             saveBtn.disabled = true;
 
             try {
-                // ⭐ Firestore යාවත්කාලීන කිරීමට dailyIncome ක්ෂේත්‍රය එකතු කර ඇත ⭐
+                // ⭐ Firestore යාවත්කාලීන කිරීමට commission ක්ෂේත්‍රය එකතු කර ඇත ⭐
                 await db.collection('users').doc(userId).update({
                     username: username,
                     currentPlan: currentPlan,
                     balance: balance,
                     totalHashRate: totalHashRate,
                     referrals: totalReferrals,
-                    dailyIncome: dailyIncome // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
+                    dailyIncome: dailyIncome,
+                    commission: commission // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
                 });
                 // ⭐ අවසන් ⭐
 
@@ -971,7 +983,10 @@
                     currentPlan: 'Free', 
                     disabled: false,
                     referrals: 0,
-                    dailyIncome: 0.0000 // ⭐ නව පරිශීලකයින් සඳහා පෙරනිමි Daily Income 
+                    dailyIncome: 0.0000,
+                    // ⭐ නව පරිශීලකයින් සඳහා පෙරනිමි Commission (0%) ⭐
+                    commission: 0.00 
+                    // ⭐ අවසන් ⭐
                 });
                 
                 
