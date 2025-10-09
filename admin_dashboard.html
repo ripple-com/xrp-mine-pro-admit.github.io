@@ -351,8 +351,8 @@
                 overflow-x: auto;
             }
             .data-table {
-                /* මේක ඉවත් කිරීමෙන් හෝ කුඩා කිරීමෙන් තිරයට වඩා විශාල වීම පාලනය කළ හැක */
-                min-width: 1100px; /* Referral තීරුව සඳහා විශාල කර ඇත */
+                /* Referral තීරුව සහ User Name තීරුව සඳහා විශාල කර ඇත */
+                min-width: 1200px; 
             }
             .data-table th, .data-table td {
                 padding: 8px;
@@ -381,7 +381,9 @@
 
             <label for="edit-email">Email:</label>
             <input type="email" id="edit-email" disabled>
-
+            
+            <label for="edit-username">User Name:</label>
+            <input type="text" id="edit-username" required>
             <label for="edit-plan">Current Plan:</label>
             <input type="text" id="edit-plan" required>
 
@@ -393,6 +395,7 @@
             
             <label for="edit-referrals">Total Referrals:</label>
             <input type="number" id="edit-referrals" step="1" required>
+
             <p id="edit-message" style="margin-top: 15px; font-style: italic; color: var(--danger-color);"></p>
 
             <div class="modal-footer">
@@ -446,6 +449,12 @@
         <div class="stat-card" style="padding: 30px;">
             <form id="register-user-form">
                 <div style="margin-bottom: 20px;">
+                    <label for="reg-username" style="display: block; margin-bottom: 5px; font-weight: 600;">User Name:</label>
+                    <input type="text" id="reg-username" required 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); background-color: #242424; color: var(--text-color); border-radius: 6px;" 
+                           placeholder="Enter User's Name">
+                </div>
+                <div style="margin-bottom: 20px;">
                     <label for="reg-email" style="display: block; margin-bottom: 5px; font-weight: 600;">Email Address:</label>
                     <input type="email" id="reg-email" required 
                            style="width: 100%; padding: 10px; border: 1px solid var(--border-color); background-color: #242424; color: var(--text-color); border-radius: 6px;" 
@@ -486,7 +495,7 @@
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Email / UID</th>
+                        <th>User Name</th> <th>Email / UID</th>
                         <th>Reg. Date/Time</th> 
                         <th>Hash Rate (TH/s)</th> 
                         <th>Balance (XRP)</th>
@@ -497,7 +506,7 @@
                     </tr>
                 </thead>
                 <tbody id="user-list">
-                    <tr><td colspan="8" style="text-align: center;" class="loading-text">Loading users...</td></tr>
+                    <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading users...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -516,7 +525,7 @@
             projectId: "xrp-mine-pro",
             storageBucket: "xrp-mine-pro.appspot.com",
             messagingSenderId: "424665736685",
-            appId: "1:424665736685:web:21ba6c17e4d395a72933e4"
+            appId: "1:424665736685:web:21ba6c17e4d395a72933e3" // (Changed to a unique dummy ID for safety)
         };
         
         // 1. Firebase Initialization
@@ -563,7 +572,7 @@
             window.location.href = ADMIN_LOGIN_PAGE;
         });
         
-        // 4. Time Formatting Function (වසර, දිනය, වෙලාව නිවැරදිව පෙන්වීමට)
+        // 4. Time Formatting Function
         function formatFirebaseTimestamp(timestamp) {
             if (!timestamp || !timestamp.toDate) return 'N/A';
             const date = timestamp.toDate();
@@ -587,9 +596,9 @@
             document.getElementById('pending-withdrawals').className = 'loading-skeleton';
             document.getElementById('active-plans').className = 'loading-skeleton';
             
-            // colspan 7 වෙනුවට 8 දමා ඇත
-            document.getElementById('user-list').innerHTML = '<tr><td colspan="8" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
-            document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; // colspan 6
+            // colspan 9 දක්වා වැඩි කර ඇත
+            document.getElementById('user-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
+            document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; 
 
             try {
                 // --- A. Load User Data ---
@@ -599,8 +608,9 @@
                     disabled: doc.data().disabled || false, 
                     totalHashRate: doc.data().totalHashRate || 0, 
                     createdAt: doc.data().createdAt, 
-                    // ⭐ නව Referral දත්ත ලබා ගැනීම ⭐
                     referrals: doc.data().referrals || 0,
+                    // ⭐ User Name දත්ත ලබා ගැනීම ⭐
+                    username: doc.data().username || 'N/A', 
                     // ⭐ අවසන් ⭐
                     ...doc.data() 
                 }));
@@ -622,13 +632,14 @@
                 userListTable.innerHTML = ''; 
                 
                 if (users.length === 0) {
-                    // colspan 7 වෙනුවට 8 දමා ඇත
-                    userListTable.innerHTML = '<tr><td colspan="8" style="text-align: center;">No users found.</td></tr>';
+                    // colspan 9 දක්වා වැඩි කර ඇත
+                    userListTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No users found.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const regDateTime = formatFirebaseTimestamp(user.createdAt);
                         const row = userListTable.insertRow();
                         row.innerHTML = `
+                            <td>${user.username || 'N/A'}</td>
                             <td>${user.email || 'N/A'}<br><small style="color:#999;font-size:10px;">UID: ${user.id.substring(0, 8)}...</small></td>
                             <td>${regDateTime}</td> 
                             <td>${(user.totalHashRate || 0).toFixed(2)}</td>
@@ -638,7 +649,7 @@
                             <td>${user.disabled ? '<span style="color:var(--danger-color);font-weight:700;">Disabled</span>' : '<span style="color:var(--success-color);font-weight:700;">Active</span>'}</td>
                             <td style="white-space: nowrap;">
                                 <button class="action-btn edit-btn" 
-                                        onclick="openEditUserModal('${user.id}', '${user.email}', '${user.currentPlan || 'Free'}', ${user.balance || 0}, ${user.totalHashRate || 0}, ${user.referrals || 0})">
+                                        onclick="openEditUserModal('${user.id}', '${user.email}', '${user.username.replace(/'/g, "\\'") || 'N/A'}', '${user.currentPlan || 'Free'}', ${user.balance || 0}, ${user.totalHashRate || 0}, ${user.referrals || 0})">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
                                 <button class="action-btn ${user.disabled ? 'approve-btn' : 'reject-btn'}" 
@@ -659,15 +670,15 @@
                 }
 
 
-                // --- B. Load Withdrawal Requests --- (නව කේතය)
+                // --- B. Load Withdrawal Requests ---
                 const withdrawalSnapshot = await db.collection('withdrawal_requests')
                                                    .where('status', '==', 'Pending') 
-                                                   .orderBy('createdAt', 'desc') // ඉල්ලීම කළ වේලාව අනුව අලුත්ම ඒවා මුලින්
+                                                   .orderBy('createdAt', 'desc') 
                                                    .get();
                 const requests = withdrawalSnapshot.docs.map(doc => ({ 
                     id: doc.id, 
                     ...doc.data(),
-                    createdAt: doc.data().createdAt // createdAt Timestamp එක ලබා ගැනීම
+                    createdAt: doc.data().createdAt 
                 }));
                 
                 document.getElementById('pending-withdrawals').textContent = requests.length;
@@ -680,7 +691,6 @@
                     withdrawalListTable.innerHTML = '<tr><td colspan="6" style="text-align: center;">No pending withdrawal requests.</td></tr>';
                 } else {
                     requests.forEach(request => {
-                        // දිනය/වේලාව format කිරීම
                         const requestDateTime = formatFirebaseTimestamp(request.createdAt); 
                         
                         const row = withdrawalListTable.insertRow();
@@ -699,24 +709,21 @@
                 
             } catch (error) {
                 console.error("Error loading dashboard data:", error);
-                // colspan 7 වෙනුවට 8 දමා ඇත
-                document.getElementById('user-list').innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
-                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; // colspan 6
+                document.getElementById('user-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
+                document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; 
             }
         }
         
-        // 6. Withdrawal Handling Function (නව කේතය)
+        // 6. Withdrawal Handling Function
         async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
             }
             
             try {
-                // Firestore Transaction එකක් භාවිතා කර දත්ත නිවැරදිව යාවත්කාලීන කරයි
                 await db.runTransaction(async (transaction) => {
                     const withdrawalRef = db.collection('withdrawal_requests').doc(requestId);
                     
-                    // status එක 'Approved' නම් 'Completed' ලෙසත්, 'Rejected' නම් 'Cancelled' ලෙසත් යැවීම
                     const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
 
                     // 1. Withdrawal Request Status යාවත්කාලීන කිරීම
@@ -725,7 +732,7 @@
                         adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    // 2. Transaction වාර්තාව එක් කිරීම (transactions.html සඳහා)
+                    // 2. Transaction වාර්තාව එක් කිරීම
                     const newTransactionRef = db.collection('transactions').doc();
                     
                     transaction.set(newTransactionRef, {
@@ -734,7 +741,7 @@
                         amount: amount,
                         address: address,
                         tag: tag,
-                        fee: 0.00, // ඔබට අවශ්‍ය නම් ගාස්තුව මෙහි වෙනස් කළ හැක
+                        fee: 0.00, 
                         status: transactionStatus, 
                         userEmail: userEmail, 
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -754,7 +761,6 @@
                         const newBalance = currentBalance - amount;
 
                         if (newBalance < 0) {
-                            // ගනුදෙනුව අවලංගු කිරීමට (rollback)
                             throw new Error("User has insufficient balance for this withdrawal!"); 
                         }
 
@@ -806,7 +812,6 @@
             }
 
             try {
-                // Firebase Auth සේවාව භාවිතා කරයි.
                 await auth.sendPasswordResetEmail(userEmail);
                 
                 alert(`Password reset email sent successfully to ${userEmail}.`);
@@ -836,14 +841,15 @@
         }
 
         // 8. Edit User Modal Functions (Edit User Data)
-        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත ⭐
-        function openEditUserModal(userId, email, currentPlan, balance, totalHashRate, totalReferrals) {
+        // ⭐ openEditUserModal ශ්‍රිතය යාවත්කාලීන කර ඇත (User Name පරාමිතිය එක් කර ඇත) ⭐
+        function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals) {
             document.getElementById('edit-user-id').value = userId;
             document.getElementById('edit-email').value = email; 
+            document.getElementById('edit-username').value = username; // ⭐ නව ක්ෂේත්‍රය
             document.getElementById('edit-plan').value = currentPlan;
             document.getElementById('edit-balance').value = balance;
             document.getElementById('edit-hashrate').value = totalHashRate;
-            document.getElementById('edit-referrals').value = totalReferrals; // ⭐ නව ක්ෂේත්‍රය
+            document.getElementById('edit-referrals').value = totalReferrals;
             document.getElementById('edit-message').textContent = '';
             document.getElementById('editUserModal').style.display = 'block';
         }
@@ -851,25 +857,33 @@
         document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const userId = document.getElementById('edit-user-id').value;
+            // ⭐ නව User Name අගය ලබා ගැනීම ⭐
+            const username = document.getElementById('edit-username').value.trim(); 
+            // ⭐ අවසන් ⭐
             const currentPlan = document.getElementById('edit-plan').value;
             const balance = parseFloat(document.getElementById('edit-balance').value);
             const totalHashRate = parseFloat(document.getElementById('edit-hashrate').value);
-            // ⭐ නව Referral අගය ලබා ගැනීම ⭐
             const totalReferrals = parseInt(document.getElementById('edit-referrals').value, 10); 
-            // ⭐ අවසන් ⭐
             const messageEl = document.getElementById('edit-message');
             const saveBtn = document.getElementById('edit-save-btn');
 
+            if (!username) {
+                messageEl.textContent = 'User Name cannot be empty.';
+                messageEl.style.color = 'var(--danger-color)';
+                return;
+            }
+            
             messageEl.textContent = 'Saving changes...';
             saveBtn.disabled = true;
 
             try {
-                // ⭐ Firestore යාවත්කාලීන කිරීමට referral ක්ෂේත්‍රය එකතු කර ඇත ⭐
+                // ⭐ Firestore යාවත්කාලීන කිරීමට username ක්ෂේත්‍රය එකතු කර ඇත ⭐
                 await db.collection('users').doc(userId).update({
+                    username: username, // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
                     currentPlan: currentPlan,
                     balance: balance,
                     totalHashRate: totalHashRate,
-                    referrals: totalReferrals // ⭐ නව ක්ෂේත්‍රය යාවත්කාලීන කිරීම
+                    referrals: totalReferrals 
                 });
                 // ⭐ අවසන් ⭐
 
@@ -894,10 +908,19 @@
         // 9. User Registration Functionality (Add User)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            // ⭐ නව User Name අගය ලබා ගැනීම ⭐
+            const username = document.getElementById('reg-username').value.trim();
+            // ⭐ අවසන් ⭐
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
             const messageEl = document.getElementById('reg-message');
             const submitBtn = document.getElementById('register-submit-btn');
+
+            if (!username) {
+                messageEl.textContent = 'User Name is required.';
+                messageEl.style.color = 'var(--danger-color)';
+                return;
+            }
 
             messageEl.textContent = 'Registering user...';
             messageEl.style.color = 'var(--primary-color)';
@@ -919,21 +942,23 @@
                 // 2. Firestore හි 'users' Collection එකට Entry එකක් එක් කිරීම
                 await db.collection('users').doc(newUser.uid).set({
                     email: email,
+                    // ⭐ නව username ක්ෂේත්‍රය එක් කර ඇත ⭐
+                    username: username, 
+                    // ⭐ අවසන් ⭐
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     balance: 0,
                     totalHashRate: 0, 
                     currentPlan: 'Free', 
                     disabled: false,
-                    referrals: 0 // ⭐ නව පරිශීලකයින් සඳහා පෙරනිමි referral ගණන
+                    referrals: 0 
                 });
                 
-                // 3. දැනට ලොග් වී සිටින Admin ගේ Session එක නැති නොකිරීමට, 
-                // මෙහිදී කිසිදු Auth Session වෙනසක් සිදු නොවේ.
                 
                 messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website.`;
                 messageEl.style.color = 'var(--success-color)';
                 
                 // Form එක clear කිරීම
+                document.getElementById('reg-username').value = '';
                 document.getElementById('reg-email').value = '';
                 document.getElementById('reg-password').value = '';
                 
