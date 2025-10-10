@@ -825,111 +825,77 @@
             populateUserList(filteredUsers);
         }
 
-        // 8. Withdrawal Handling Function (Minor change to use totalDeducted for balance check)
-        async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
-            if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
-                return;
+        // 8. Withdrawal Handling Function (Fixed for Firestore Transaction Error)
+async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
+    if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
+        return;
+    }
+    
+    // withdrawal.html එකෙන් නියම කර ඇති Fee එක භාවිතා කරයි
+    const WITHDRAWAL_FEE = 0.05; 
+    // Refund කිරීම සඳහා amount + fee එක සම්පූර්ණයෙන්ම එකතු කළ යුතුය 
+    const totalRefundAmount = amount + WITHDRAWAL_FEE; 
+    
+    try {
+        await db.runTransaction(async (transaction) => {
+            
+            // --- 1. ALL READS (සියලුම කියවීම් මුලින්ම සිදු කරන්න) ---
+            // Note: withdrawal.html මගින් request එක යවන්නේ 'transactions' collection එකටයි.
+            const withdrawalRef = db.collection('transactions').doc(requestId); 
+            const userRef = db.collection('users').doc(userId);
+            
+            const withdrawalDoc = await transaction.get(withdrawalRef);
+            if (!withdrawalDoc.exists) {
+                 throw new Error("Withdrawal transaction record not found!");
             }
             
-            try {
-                // withdrawal.html එකේ ඇති fixed fee එක භාවිතා කරයි
-                const WITHDRAWAL_FEE = 0.05; 
-                const totalDeduction = amount + WITHDRAWAL_FEE; 
-
-                await db.runTransaction(async (transaction) => {
-                    // **'withdrawal_requests' වෙනුවට 'transactions' භාවිතා කරයි**
-                    const withdrawalRef = db.collection('transactions').doc(requestId);
-                    
-                    const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
-                    
-                    // Withdrawal Record Update
-                    transaction.update(withdrawalRef, {
-                        status: transactionStatus, 
-                        adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-
-                    // Note: 'transactions' collection එකේ නව entry එකක් අවශ්‍ය නැත, මන්ද එය withdrawal.html වෙතින් දැනටමත් ඇතුළු කර ඇත.
-                    
-                    
-                    if (action === 'Approved') {
-                        const userRef = db.collection('users').doc(userId);
-                        const userDoc = await transaction.get(userRef);
-
-                        if (!userDoc.exists) {
-                            throw new Error("User document does not exist!");
-                        }
-                        
-                        const currentBalance = userDoc.data().balance || 0;
-                        // Approved නම් පමණක් ශේෂය අඩු කරයි
-                        const newBalance = currentBalance - totalDeduction; 
-
-                        if (newBalance < 0 && currentBalance >= amount) { 
-                           // මෙය ඉතා වැදගත් වේ: දැනටමත් අඩු කර ඇත්දැයි බැලීමට (withdrawal.html හි transaction එකෙන්)
-                           // මෙහිදී, withdrawal.html කේතය අනුව, මුදල් දැනටමත් කපා හැර ඇත. 
-                           // එබැවින්, Approved කරන විට නැවතත් කපා හැරීම වැළැක්විය යුතුය.
-                           // කෙසේ වෙතත්, admin_dashboard කේතයේ මුල් අනුවාදය නැවත කපා හරින බැවින්, 
-                           // withdrawal.html හි Balance Update කොටස ඉවත් කර Admin විසින් Approved කළ පසු පමණක් Balance Update කරන ආකාරයට කේතය සකස් කරමු.
-                           // 
-                           // **කෙසේ වෙතත්, ඔබේ මුල් කේතය සහ withdrawal.html කේතය අනුගමනය කරමින්,
-                           // withdrawal.html මගින් මුදල් දැනටමත් කපා හැර ඇති බැවින්,
-                           // Approved මත මෙහිදී කිසිදු ශේෂ වෙනසක් සිදු නොකළ යුතුය.** // 
-                           // **Rejected මත, මුදල නැවත ගිණුමට එකතු කළ යුතුය.**
-                           
-                           // **Withdrawal.html කේතය අනුව:**
-                           // 1. Transaction එක තුළ ශේෂය අඩු කිරීම සිදු කරයි.
-                           // 2. Withdrawal status එක 'Pending' ලෙස සටහන් කරයි.
-                           
-                           // **Admin Dashboard හිදී:**
-                           // - Approved: කිසිදු ශේෂ වෙනසක් අවශ්‍ය නැත, මන්ද එය දැනටමත් අඩු කර ඇත.
-                           // - Rejected: ශේෂය නැවත එකතු කළ යුතුය.
-
-                            // ශේෂය දැනටමත් අඩු කර ඇති බැවින්, Approved මත කිසිවක් නොකරන්න.
-                            alert(`Withdrawal Request ${requestId} has been Approved/Completed. Balance already deducted at time of request.`);
-
-                        } else if (action === 'Rejected') {
-                            // Rejected නම්, මුළු අඩු කළ මුදල (amount + fee) නැවත ගිණුමට එකතු කරන්න
-                            const amountToRefund = (request.amount || 0) + (request.fee || 0); // මුල් transaction එකෙන් fee එක ගනී
-
-                            // මුල් කේතය:
-                            const currentBalanceRejected = userDoc.data().balance || 0;
-                            const newBalanceRejected = currentBalanceRejected + amountToRefund;
-                            
-                            transaction.update(userRef, {
-                                balance: newBalanceRejected
-                            });
-                            
-                            alert(`Withdrawal Request ${requestId} has been Rejected/Cancelled. ${amountToRefund.toFixed(4)} XRP has been refunded.`);
-                        }
-                    } else if (action === 'Rejected') {
-                        // Rejected නම්, මුළු අඩු කළ මුදල (amount + fee) නැවත ගිණුමට එකතු කරන්න
-                        const amountToRefund = (request.amount || 0) + (request.fee || 0); // මුල් transaction එකෙන් fee එක ගනී
-                        const userRef = db.collection('users').doc(userId);
-                        const userDoc = await transaction.get(userRef);
-
-                        if (!userDoc.exists) {
-                            throw new Error("User document does not exist!");
-                        }
-                        
-                        const currentBalanceRejected = userDoc.data().balance || 0;
-                        const newBalanceRejected = currentBalanceRejected + amountToRefund;
-                        
-                        transaction.update(userRef, {
-                            balance: newBalanceRejected
-                        });
-                        
-                        alert(`Withdrawal Request ${requestId} has been Rejected/Cancelled. ${amountToRefund.toFixed(4)} XRP has been refunded.`);
-
-                    }
-                });
-
-                // දත්ත නැවත Load කරන්න (forceReload අවශ්‍යයි, මන්ද Pending Requests ලැයිස්තුව වෙනස් වේ)
-                loadDashboardData(true); 
-                
-            } catch (error) {
-                console.error(`Error handling withdrawal ${action}:`, error);
-                alert(`Failed to ${action} withdrawal: ` + error.message);
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) {
+                throw new Error("User document does not exist!");
             }
-        }
+            
+            // අවශ්‍ය දත්ත ලබා ගැනීම
+            const currentBalance = userDoc.data().balance || 0;
+            const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
+
+            
+            // --- 2. ALL WRITES (සියලුම ලිවීම් ඉන් පසුව සිදු කරන්න) ---
+            
+            // A. Withdrawal Record Update:
+            // withdrawal record එකේ status එක update කිරීම
+            transaction.update(withdrawalRef, {
+                status: transactionStatus, 
+                adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // B. User Balance Update:
+            if (action === 'Rejected') {
+                // Rejected නම්, කපා හැරූ සම්පූර්ණ මුදල (amount + fee) නැවත user ගිණුමට එකතු කරන්න.
+                
+                const newBalance = currentBalance + totalRefundAmount;
+                
+                transaction.update(userRef, {
+                    balance: newBalance
+                });
+                
+                alert(`Withdrawal Request ${requestId.substring(0, 8)}... has been Rejected/Cancelled. ${totalRefundAmount.toFixed(4)} XRP has been refunded.`);
+
+            } else if (action === 'Approved') {
+                // Approved නම්, කිසිදු ශේෂ වෙනසක් අවශ්‍ය නොවේ, මන්ද එය withdrawal.html හිදී 
+                // user ගේ ගිණුමෙන් දැනටමත් කපා හැර ඇත.
+                alert(`Withdrawal Request ${requestId.substring(0, 8)}... has been Approved/Completed. Balance already deducted at time of request.`);
+            }
+            
+        });
+
+        // දත්ත නැවත Load කරන්න 
+        loadDashboardData(true); 
+        
+    } catch (error) {
+        console.error(`Error handling withdrawal ${action}:`, error);
+        alert(`Failed to ${action} withdrawal: ` + error.message);
+    }
+}
 
 
         // 9. User Management Functions (No change)
