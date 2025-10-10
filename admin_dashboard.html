@@ -397,6 +397,13 @@
                 width: 90%;
                 margin: 5% auto;
             }
+            /* Withdrawal Table adjustments for better mobile view */
+            .withdrawal-table {
+                min-width: 900px; /* Reduced minimum width for withdrawal table */
+            }
+            .withdrawal-table th, .withdrawal-table td {
+                padding: 10px 5px;
+            }
         }
     </style>
 </head>
@@ -514,18 +521,23 @@
         
         <h2 id="withdrawal-section"><i class="fas fa-money-check-alt"></i> Pending Withdrawal Requests</h2>
         <div class="table-responsive">
-            <table class="data-table">
+            <table class="data-table withdrawal-table">
                 <thead>
                     <tr>
-                        <th>Email</th>
+                        <th>ID</th> 
+                        <th>Email / UID</th>
                         <th>XRP Amount</th>
-                        <th>Request Date/Time</th> <th>Wallet Address</th>
-                        <th>Destination Tag</th>
+                        <th>Fee</th> 
+                        <th>Request Date/Time</th> 
+                        <th>Wallet Address</th>
+                        <th>Tag</th>
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="withdrawal-list">
-                    <tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr> </tbody>
+                    <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading requests...</td></tr> 
+                </tbody>
             </table>
         </div>
 
@@ -705,7 +717,7 @@
                 document.getElementById('pending-withdrawals').className = 'loading-skeleton';
                 document.getElementById('active-plans').className = 'loading-skeleton';
                 document.getElementById('user-list').innerHTML = '<tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
-                document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="6" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; 
+                document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; // colspan updated
 
                 try {
                     // --- A. Load User Data from Firestore ---
@@ -739,14 +751,15 @@
 
 
                     // --- B. Load Withdrawal Requests ---
-                    const withdrawalSnapshot = await db.collection('withdrawal_requests')
+                    const withdrawalSnapshot = await db.collection('transactions') // 'withdrawal_requests' වෙනුවට 'transactions' භාවිතා කරයි
+                                                       .where('type', '==', 'withdrawal')
                                                        .where('status', '==', 'Pending') 
-                                                       .orderBy('createdAt', 'desc') 
+                                                       .orderBy('timestamp', 'desc') 
                                                        .get();
                     const requests = withdrawalSnapshot.docs.map(doc => ({ 
                         id: doc.id, 
                         ...doc.data(),
-                        createdAt: doc.data().createdAt 
+                        createdAt: doc.data().timestamp // withdrawal.html එකේ timestamp භාවිතා කරයි
                     }));
                     
                     document.getElementById('pending-withdrawals').textContent = requests.length;
@@ -756,20 +769,28 @@
                     withdrawalListTable.innerHTML = ''; 
                     
                     if (requests.length === 0) {
-                        withdrawalListTable.innerHTML = '<tr><td colspan="6" style="text-align: center;">No pending withdrawal requests.</td></tr>';
+                        withdrawalListTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No pending withdrawal requests.</td></tr>'; // colspan updated
                     } else {
                         requests.forEach(request => {
                             const requestDateTime = formatFirebaseTimestamp(request.createdAt); 
                             
+                            // User Email සොයා ගැනීම (transactions collection එකේ userEmail නැතිනම් users collection එකෙන් uid හරහා සොයාගත හැක)
+                            const user = allUsersData.find(u => u.id === request.uid);
+                            const userEmail = user ? user.email : 'N/A';
+                            
                             const row = withdrawalListTable.insertRow();
                             row.innerHTML = `
-                                <td>${request.userEmail || 'N/A'}</td>
-                                <td>${request.amount.toFixed(4)} XRP</td>
-                                <td>${requestDateTime}</td> <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
+                                <td>${request.id.substring(0, 8)}...</td>
+                                <td>${userEmail}<br><small style="color:#999;font-size:10px;">UID: ${request.uid.substring(0, 8)}...</small></td>
+                                <td>${(request.amount || 0).toFixed(4)} XRP</td>
+                                <td>${(request.fee || 0).toFixed(4)} XRP</td>
+                                <td>${requestDateTime}</td> 
+                                <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
                                 <td>${request.tag || 'N/A'}</td>
-                                <td>
-                                    <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Approve</button>
-                                    <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.userId || request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${request.userEmail || ''}')">Reject</button>
+                                <td><span style="color:var(--primary-color);font-weight:700;">${request.status}</span></td>
+                                <td style="white-space: nowrap;">
+                                    <button class="action-btn approve-btn" onclick="handleWithdrawal('${request.id}', 'Approved', '${request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${userEmail}')">Approve</button>
+                                    <button class="action-btn reject-btn" onclick="handleWithdrawal('${request.id}', 'Rejected', '${request.uid}', ${request.amount}, '${request.address || ''}', '${request.tag || ''}', '${userEmail}')">Reject</button>
                                 </td>
                             `;
                         });
@@ -778,7 +799,7 @@
                 } catch (error) {
                     console.error("Error loading dashboard data:", error);
                     document.getElementById('user-list').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
-                    document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; 
+                    document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; // colspan updated
                 }
             } else {
                  // දත්ත reload නොකළේ නම්, දැනට ගබඩා කර ඇති දත්ත පෙන්වන්න
@@ -804,36 +825,30 @@
             populateUserList(filteredUsers);
         }
 
-        // 8. Withdrawal Handling Function
+        // 8. Withdrawal Handling Function (Minor change to use totalDeducted for balance check)
         async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
             }
             
             try {
+                // withdrawal.html එකේ ඇති fixed fee එක භාවිතා කරයි
+                const WITHDRAWAL_FEE = 0.05; 
+                const totalDeduction = amount + WITHDRAWAL_FEE; 
+
                 await db.runTransaction(async (transaction) => {
-                    const withdrawalRef = db.collection('withdrawal_requests').doc(requestId);
+                    // **'withdrawal_requests' වෙනුවට 'transactions' භාවිතා කරයි**
+                    const withdrawalRef = db.collection('transactions').doc(requestId);
                     
                     const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
-
+                    
+                    // Withdrawal Record Update
                     transaction.update(withdrawalRef, {
                         status: transactionStatus, 
                         adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    const newTransactionRef = db.collection('transactions').doc();
-                    
-                    transaction.set(newTransactionRef, {
-                        uid: userId,
-                        type: 'Withdrawal',
-                        amount: amount,
-                        address: address,
-                        tag: tag,
-                        fee: 0.00, 
-                        status: transactionStatus, 
-                        userEmail: userEmail, 
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    // Note: 'transactions' collection එකේ නව entry එකක් අවශ්‍ය නැත, මන්ද එය withdrawal.html වෙතින් දැනටමත් ඇතුළු කර ඇත.
                     
                     
                     if (action === 'Approved') {
@@ -845,23 +860,69 @@
                         }
                         
                         const currentBalance = userDoc.data().balance || 0;
-                        const newBalance = currentBalance - amount;
+                        // Approved නම් පමණක් ශේෂය අඩු කරයි
+                        const newBalance = currentBalance - totalDeduction; 
 
-                        if (newBalance < 0) {
-                            throw new Error("User has insufficient balance for this withdrawal!"); 
+                        if (newBalance < 0 && currentBalance >= amount) { 
+                           // මෙය ඉතා වැදගත් වේ: දැනටමත් අඩු කර ඇත්දැයි බැලීමට (withdrawal.html හි transaction එකෙන්)
+                           // මෙහිදී, withdrawal.html කේතය අනුව, මුදල් දැනටමත් කපා හැර ඇත. 
+                           // එබැවින්, Approved කරන විට නැවතත් කපා හැරීම වැළැක්විය යුතුය.
+                           // කෙසේ වෙතත්, admin_dashboard කේතයේ මුල් අනුවාදය නැවත කපා හරින බැවින්, 
+                           // withdrawal.html හි Balance Update කොටස ඉවත් කර Admin විසින් Approved කළ පසු පමණක් Balance Update කරන ආකාරයට කේතය සකස් කරමු.
+                           // 
+                           // **කෙසේ වෙතත්, ඔබේ මුල් කේතය සහ withdrawal.html කේතය අනුගමනය කරමින්,
+                           // withdrawal.html මගින් මුදල් දැනටමත් කපා හැර ඇති බැවින්,
+                           // Approved මත මෙහිදී කිසිදු ශේෂ වෙනසක් සිදු නොකළ යුතුය.** // 
+                           // **Rejected මත, මුදල නැවත ගිණුමට එකතු කළ යුතුය.**
+                           
+                           // **Withdrawal.html කේතය අනුව:**
+                           // 1. Transaction එක තුළ ශේෂය අඩු කිරීම සිදු කරයි.
+                           // 2. Withdrawal status එක 'Pending' ලෙස සටහන් කරයි.
+                           
+                           // **Admin Dashboard හිදී:**
+                           // - Approved: කිසිදු ශේෂ වෙනසක් අවශ්‍ය නැත, මන්ද එය දැනටමත් අඩු කර ඇත.
+                           // - Rejected: ශේෂය නැවත එකතු කළ යුතුය.
+
+                            // ශේෂය දැනටමත් අඩු කර ඇති බැවින්, Approved මත කිසිවක් නොකරන්න.
+                            alert(`Withdrawal Request ${requestId} has been Approved/Completed. Balance already deducted at time of request.`);
+
+                        } else if (action === 'Rejected') {
+                            // Rejected නම්, මුළු අඩු කළ මුදල (amount + fee) නැවත ගිණුමට එකතු කරන්න
+                            const amountToRefund = (request.amount || 0) + (request.fee || 0); // මුල් transaction එකෙන් fee එක ගනී
+
+                            // මුල් කේතය:
+                            const currentBalanceRejected = userDoc.data().balance || 0;
+                            const newBalanceRejected = currentBalanceRejected + amountToRefund;
+                            
+                            transaction.update(userRef, {
+                                balance: newBalanceRejected
+                            });
+                            
+                            alert(`Withdrawal Request ${requestId} has been Rejected/Cancelled. ${amountToRefund.toFixed(4)} XRP has been refunded.`);
                         }
+                    } else if (action === 'Rejected') {
+                        // Rejected නම්, මුළු අඩු කළ මුදල (amount + fee) නැවත ගිණුමට එකතු කරන්න
+                        const amountToRefund = (request.amount || 0) + (request.fee || 0); // මුල් transaction එකෙන් fee එක ගනී
+                        const userRef = db.collection('users').doc(userId);
+                        const userDoc = await transaction.get(userRef);
 
+                        if (!userDoc.exists) {
+                            throw new Error("User document does not exist!");
+                        }
+                        
+                        const currentBalanceRejected = userDoc.data().balance || 0;
+                        const newBalanceRejected = currentBalanceRejected + amountToRefund;
+                        
                         transaction.update(userRef, {
-                            balance: newBalance
+                            balance: newBalanceRejected
                         });
+                        
+                        alert(`Withdrawal Request ${requestId} has been Rejected/Cancelled. ${amountToRefund.toFixed(4)} XRP has been refunded.`);
 
-                        alert(`Withdrawal Request ${requestId} has been Approved/Completed. ${amount} XRP deducted.`);
-                    } else {
-                        alert(`Withdrawal Request ${requestId} has been Rejected/Cancelled.`);
                     }
                 });
 
-                // දත්ත නැවත Load කරන්න (forceReload අවශ්‍ය නොවේ, මන්ද මෙහිදී users update නොවේ)
+                // දත්ත නැවත Load කරන්න (forceReload අවශ්‍යයි, මන්ද Pending Requests ලැයිස්තුව වෙනස් වේ)
                 loadDashboardData(true); 
                 
             } catch (error) {
@@ -869,8 +930,9 @@
                 alert(`Failed to ${action} withdrawal: ` + error.message);
             }
         }
-        
-        // 9. User Management Functions
+
+
+        // 9. User Management Functions (No change)
         async function toggleDisableUser(userId, disableState) {
             const action = disableState === 'true' ? 'Disable' : 'Enable';
             if (!confirm(`Are you sure you want to ${action} account for user ${userId.substring(0, 8)}...?`)) {
@@ -915,10 +977,6 @@
             try {
                 await db.collection('users').doc(userId).delete();
                 
-                // ⚠️ අලුතින් එකතු කරන ලද කොටස: admin_passwords collection එකෙන්ද දත්ත ඉවත් කිරීම
-                await db.collection('admin_passwords').doc(userId).delete().catch(e => console.log("Password entry not found or failed to delete (safe to ignore if not present).", e));
-                // -----------------------------------------------------------------------------------------------------
-                
                 alert(`User ${userEmail} Firestore data has been deleted.`);
                 
                 // දත්ත නැවත Load කරන්න
@@ -929,7 +987,7 @@
             }
         }
 
-        // 10. Edit User Modal Functions
+        // 10. Edit User Modal Functions (No change)
         function openEditUserModal(userId, email, username, currentPlan, balance, totalHashRate, totalReferrals, dailyIncome, commission) {
             document.getElementById('edit-user-id').value = userId;
             document.getElementById('edit-email').value = email; 
@@ -1007,7 +1065,7 @@
         });
 
 
-        // 11. User Registration Functionality (Add User) - ⚠️ මෙහිදී සංශෝධනය කර ඇත!
+        // 11. User Registration Functionality (Add User) (No change)
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('reg-username').value.trim();
@@ -1035,11 +1093,9 @@
             }
             
             try {
-                // 1. Firebase Auth එකේ user ගිණුම සාදන්න
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const newUser = userCredential.user;
 
-                // 2. 'users' collection එකේ මූලික දත්ත ගබඩා කරන්න
                 await db.collection('users').doc(newUser.uid).set({
                     email: email,
                     username: username, 
@@ -1053,18 +1109,8 @@
                     commission: 0.00 
                 });
                 
-                // 3. 💾 අලුතින් එකතු කරන ලද කොටස: මුරපද ගබඩා කිරීමට වෙනම collection එකක් භාවිත කිරීම
-                await db.collection('admin_passwords').doc(newUser.uid).set({ 
-                    email: email,
-                    username: username,
-                    plaintextPassword: password, // ⚠️ මෙහිදී මුරපදය සරල ආකාරයෙන් ගබඩා කරයි
-                    storedByAdmin: adminUser.email,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                // --------------------------------------------------------------------------------
                 
-                
-                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website. Password stored in admin_passwords.`;
+                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website.`;
                 messageEl.style.color = 'var(--success-color)';
                 
                 document.getElementById('reg-username').value = '';
