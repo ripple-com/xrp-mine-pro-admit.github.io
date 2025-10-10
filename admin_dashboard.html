@@ -804,7 +804,7 @@
             populateUserList(filteredUsers);
         }
 
-        // 8. Withdrawal Handling Function (No change needed)
+        // 8. Withdrawal Handling Function
         async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
             if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
                 return;
@@ -915,6 +915,10 @@
             try {
                 await db.collection('users').doc(userId).delete();
                 
+                // ⚠️ අලුතින් එකතු කරන ලද කොටස: admin_passwords collection එකෙන්ද දත්ත ඉවත් කිරීම
+                await db.collection('admin_passwords').doc(userId).delete().catch(e => console.log("Password entry not found or failed to delete (safe to ignore if not present).", e));
+                // -----------------------------------------------------------------------------------------------------
+                
                 alert(`User ${userEmail} Firestore data has been deleted.`);
                 
                 // දත්ත නැවත Load කරන්න
@@ -1003,7 +1007,7 @@
         });
 
 
-        // 11. User Registration Functionality (Add User)
+        // 11. User Registration Functionality (Add User) - ⚠️ මෙහිදී සංශෝධනය කර ඇත!
         document.getElementById('register-user-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('reg-username').value.trim();
@@ -1031,9 +1035,11 @@
             }
             
             try {
+                // 1. Firebase Auth එකේ user ගිණුම සාදන්න
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const newUser = userCredential.user;
 
+                // 2. 'users' collection එකේ මූලික දත්ත ගබඩා කරන්න
                 await db.collection('users').doc(newUser.uid).set({
                     email: email,
                     username: username, 
@@ -1047,8 +1053,18 @@
                     commission: 0.00 
                 });
                 
+                // 3. 💾 අලුතින් එකතු කරන ලද කොටස: මුරපද ගබඩා කිරීමට වෙනම collection එකක් භාවිත කිරීම
+                await db.collection('admin_passwords').doc(newUser.uid).set({ 
+                    email: email,
+                    username: username,
+                    plaintextPassword: password, // ⚠️ මෙහිදී මුරපදය සරල ආකාරයෙන් ගබඩා කරයි
+                    storedByAdmin: adminUser.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // --------------------------------------------------------------------------------
                 
-                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website.`;
+                
+                messageEl.textContent = `Success! User ${email} registered. The user can now log in to the main website. Password stored in admin_passwords.`;
                 messageEl.style.color = 'var(--success-color)';
                 
                 document.getElementById('reg-username').value = '';
