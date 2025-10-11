@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRP Mining Plan Editor (Admin)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #121212; 
+            color: #eeeeee; 
+            line-height: 1.6;
+        }
+        :root {
+            --primary-color: #03a9f4; 
+            --secondary-color: #ff9800; 
+            --accent-color: #4CAF50;
+            --card-bg: #212121; 
+            --input-bg: #333333;
+            --border-color: #555;
+        }
+        
+        h1 {
+            color: var(--secondary-color);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+        }
+        
+        .plan-editor-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .plan-card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border-top: 5px solid var(--primary-color);
+        }
+        
+        .plan-card h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        .input-group input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: #eeeeee;
+            font-size: 1em;
+        }
+
+        .save-btn {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            margin-top: 20px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        
+        .save-btn:hover {
+            background-color: #388e3c;
+            cursor: pointer;
+        }
+
+        #status-message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+        
+        #loading {
+            text-align: center;
+            padding: 50px;
+            color: var(--primary-color);
+            font-size: 1.5em;
+        }
+
+        .home-link {
+            display: block;
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            font-size: 1.1em;
+        }
+        
+        @media (max-width: 768px) {
+             .plan-card {
+                width: 100%;
+            }
+            .plan-editor-container {
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1><i class="fas fa-tools"></i> Mining Plan Editor (Admin)</h1>
+    <a href="dashboard.html" class="home-link"><i class="fas fa-arrow-left"></i> Go to Dashboard</a>
+
+    <div id="loading">Loading Plans...</div>
+
+    <div class="plan-editor-container" id="plan-editor-container" style="display:none;">
+        </div>
+    
+    <div id="status-message"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ⚠️ ඔබේ සැබෑ Firebase Config තොරතුරු මෙහිදීත් තිබිය යුතුයි.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4", 
+            authDomain: "xrp-mine-pro.firebaseapp.com",
+            projectId: "xrp-mine-pro",
+            storageBucket: "xrp-mine-pro.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore(); 
+        
+        // 🚨 වෙනස් කිරීමට අවශ්‍ය Firestore Document ID එක.
+        const PLANS_DOC_ID = 'pricing'; 
+        const PLANS_COLLECTION = 'plans';
+
+        // ----------------------------------------------------
+        // 🟢 1. සැලසුම් දත්ත Firestore වෙතින් කියවීම
+        // ----------------------------------------------------
+
+        async function fetchPlans() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('plan-editor-container').style.display = 'none';
+            document.getElementById('status-message').textContent = '';
+
+            try {
+                // සත්‍ය admin පරීක්ෂාවක් නොමැතිව, සරලව දත්ත කියවයි.
+                // ⚠️ සැබෑ භාවිතයේදී, මෙහි admin-level ආරක්ෂාවක් තිබිය යුතුය.
+                const doc = await db.collection(PLANS_COLLECTION).doc(PLANS_DOC_ID).get();
+
+                if (!doc.exists) {
+                    document.getElementById('status-message').textContent = 'Error: Plans document not found in Firestore! Ensure a "plans/pricing" document exists.';
+                    return;
+                }
+                
+                const plansData = doc.data();
+                renderPlanEditor(plansData);
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('plan-editor-container').style.display = 'flex';
+
+
+            } catch (error) {
+                console.error("Error fetching plans:", error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('status-message').textContent = 'Error loading plans. Check console.';
+            }
+        }
+
+        // ----------------------------------------------------
+        // 🟢 2. සැලසුම් සංස්කරණ අතුරුමුහුණත (UI) ජනනය කිරීම
+        // ----------------------------------------------------
+
+        function renderPlanEditor(plans) {
+            const container = document.getElementById('plan-editor-container');
+            container.innerHTML = ''; // පැරණි දත්ත ඉවත් කරන්න
+            
+            // සැලසුම් ID (Firestore හි ඇති key)
+            const planKeys = ['free', 'bronze', 'silver', 'gold']; 
+
+            planKeys.forEach(key => {
+                const plan = plans[key];
+                // සැලසුම අස්ථානගත වී ඇත්නම් default දත්ත භාවිතා කරන්න (නැතහොත් මඟහරින්න)
+                if (!plan) {
+                     console.warn(`Plan key '${key}' missing in Firestore. Skipping.`);
+                     return;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'plan-card';
+                
+                const title = plan.name || key.toUpperCase();
+                
+                card.innerHTML = `
+                    <h2>${title}</h2>
+                    <form id="form-${key}">
+                        <div class="input-group">
+                            <label for="${key}-hashRate">Hash Rate (MH/s):</label>
+                            <input type="number" step="0.01" id="${key}-hashRate" value="${plan.hashRate || 0}" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="${key}-price">Price (USD - $):</label>
+                            <input type="number" step="0.01" id="${key}-price" value="${plan.price || 0}" required ${key === 'free' ? 'readonly' : ''}>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="${key}-duration">Duration (Days):</label>
+                            <input type="number" id="${key}-duration" value="${plan.durationDays || 0}" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="${key}-earning">Full Earning (XRP):</label>
+                            <input type="number" step="0.01" id="${key}-earning" value="${plan.fullEarningXRP || 0}" required>
+                        </div>
+                        
+                        <button type="button" class="save-btn" onclick="savePlan('${key}')">
+                            <i class="fas fa-save"></i> Save ${title}
+                        </button>
+                    </form>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ----------------------------------------------------
+        // 🟢 3. සැලසුම් දත්ත Firestore වෙත යාවත්කාලීන කිරීම
+        // ----------------------------------------------------
+
+        async function savePlan(key) {
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = 'Saving...';
+            statusMessage.style.color = 'var(--primary-color)';
+
+            // Input Fields වෙතින් අගයන් ලබා ගැනීම
+            const hashRate = parseFloat(document.getElementById(`${key}-hashRate`).value);
+            const price = parseFloat(document.getElementById(`${key}-price`).value);
+            const durationDays = parseInt(document.getElementById(`${key}-duration`).value);
+            const fullEarningXRP = parseFloat(document.getElementById(`${key}-earning`).value);
+            
+            if (isNaN(hashRate) || isNaN(price) || isNaN(durationDays) || isNaN(fullEarningXRP)) {
+                statusMessage.textContent = 'Please enter valid numbers for all fields.';
+                statusMessage.style.color = '#f44336';
+                return;
+            }
+
+            try {
+                const planDocRef = db.collection(PLANS_COLLECTION).doc(PLANS_DOC_ID);
+                
+                // Firestore Transaction එකක් භාවිතයෙන් දත්ත ආරක්ෂිතව යාවත්කාලීන කිරීම
+                await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(planDocRef);
+                    if (!doc.exists) throw "Plans document not found.";
+
+                    const currentPlans = doc.data();
+                    
+                    // යාවත්කාලීන කළ සැලසුම නිර්මාණය කිරීම
+                    const updatedPlan = {
+                        ...currentPlans[key], // පවතින වෙනත් fields තබා ගනී (උදා: name)
+                        hashRate: hashRate,
+                        // Free plan නම් price 0.00 ලෙස තබා ගන්න
+                        price: key === 'free' ? 0.00 : price, 
+                        durationDays: durationDays,
+                        fullEarningXRP: fullEarningXRP
+                    };
+
+                    // සම්පූර්ණ Plans Document එක යාවත්කාලීන කිරීම
+                    transaction.update(planDocRef, {
+                        [key]: updatedPlan
+                    });
+                });
+
+                statusMessage.textContent = `${key.toUpperCase()} Plan saved successfully!`;
+                statusMessage.style.color = 'var(--accent-color)';
+                
+                setTimeout(() => { statusMessage.textContent = ''; }, 3000); 
+
+            } catch (error) {
+                console.error(`Error saving ${key} plan:`, error);
+                statusMessage.textContent = `Error saving ${key} plan: ${error.message || error}`;
+                statusMessage.style.color = '#f44336';
+            }
+        }
+        
+        // ----------------------------------------------------
+        // 🔑 Auth State Listener (Login/Admin පරීක්ෂාව)
+        // ----------------------------------------------------
+        
+        // ⚠️ සැබෑ භාවිතයේදී, මෙම පිටුවට ප්‍රවේශ වීමට admin පරිශීලකයින් පමණක් විය යුතුය.
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // 🚨 සැබෑ Admin පරීක්ෂාවක් (Email, Custom Claims) මෙහිදී සිදු කරන්න
+                
+                // දැනට, login වූ ඕනෑම අයෙකුට අවසර දෙයි (Demo සඳහා)
+                fetchPlans(); 
+                
+            } else {
+                alert("You must be logged in to view the Plan Editor.");
+                window.location.href = "register.html"; // වෙනත් පිටුවකට යොමු කිරීම
+            }
+        });
+        
+
+    </script>
+
+</body>
+</html>
