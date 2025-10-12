@@ -540,27 +540,28 @@
                 </tbody>
             </table>
         </div>
+        
         <h2 id="withdrawal-history-section"><i class="fas fa-history"></i> Withdrawal History (Approved/Rejected)</h2>
-<div class="table-responsive">
-    <table class="data-table withdrawal-table">
-        <thead>
-            <tr>
-                <th>ID</th> 
-                <th>Email / UID</th>
-                <th>XRP Amount</th>
-                <th>Fee</th> 
-                <th>Request Date/Time</th> 
-                <th>Action Date/Time</th> <th>Wallet Address</th>
-                <th>Status</th>
-                <th>Admin</th>
-            </tr>
-        </thead>
-        <tbody id="withdrawal-history-list">
-            <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr> 
-        </tbody>
-    </table>
-</div>
-
+        <div class="table-responsive">
+            <table class="data-table withdrawal-table">
+                <thead>
+                    <tr>
+                        <th>ID</th> 
+                        <th>Email / UID</th>
+                        <th>XRP Amount</th>
+                        <th>Fee</th> 
+                        <th>Request Date/Time</th> 
+                        <th>Action Date/Time</th> 
+                        <th>Wallet Address</th>
+                        <th>Status</th>
+                        <th>Admin</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawal-history-list">
+                    <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr> 
+                </tbody>
+            </table>
+        </div>
         <h2 id="user-list-section"><i class="fas fa-users"></i> All Users</h2>
         
         <div class="search-container">
@@ -737,7 +738,8 @@
                 document.getElementById('pending-withdrawals').className = 'loading-skeleton';
                 document.getElementById('active-plans').className = 'loading-skeleton';
                 document.getElementById('user-list').innerHTML = '<tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
-                document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading requests...</td></tr>'; // colspan updated
+                document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading requests...</td></tr>';
+                document.getElementById('withdrawal-history-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr>'; // Added history loading indicator
 
                 try {
                     // --- A. Load User Data from Firestore ---
@@ -770,8 +772,8 @@
                     populateUserList(allUsersData);
 
 
-                    // --- B. Load Withdrawal Requests ---
-                    const withdrawalSnapshot = await db.collection('transactions') // 'withdrawal_requests' වෙනුවට 'transactions' භාවිතා කරයි
+                    // --- B. Load Pending Withdrawal Requests ---
+                    const withdrawalSnapshot = await db.collection('transactions')
                                                        .where('type', '==', 'withdrawal')
                                                        .where('status', '==', 'Pending') 
                                                        .orderBy('timestamp', 'desc') 
@@ -779,7 +781,7 @@
                     const requests = withdrawalSnapshot.docs.map(doc => ({ 
                         id: doc.id, 
                         ...doc.data(),
-                        createdAt: doc.data().timestamp // withdrawal.html එකේ timestamp භාවිතා කරයි
+                        createdAt: doc.data().timestamp
                     }));
                     
                     document.getElementById('pending-withdrawals').textContent = requests.length;
@@ -789,12 +791,11 @@
                     withdrawalListTable.innerHTML = ''; 
                     
                     if (requests.length === 0) {
-                        withdrawalListTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No pending withdrawal requests.</td></tr>'; // colspan updated
+                        withdrawalListTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No pending withdrawal requests.</td></tr>';
                     } else {
                         requests.forEach(request => {
                             const requestDateTime = formatFirebaseTimestamp(request.createdAt); 
                             
-                            // User Email සොයා ගැනීම (transactions collection එකේ userEmail නැතිනම් users collection එකෙන් uid හරහා සොයාගත හැක)
                             const user = allUsersData.find(u => u.id === request.uid);
                             const userEmail = user ? user.email : 'N/A';
                             
@@ -816,10 +817,14 @@
                         });
                     }
                     
+                    // --- C. Load Withdrawal History ---
+                    loadWithdrawalHistory(); // 👈 නිවැරදි ස්ථානය
+                    
                 } catch (error) {
                     console.error("Error loading dashboard data:", error);
                     document.getElementById('user-list').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
-                    document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`; // colspan updated
+                    document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`;
+                    document.getElementById('withdrawal-history-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading history: ${error.message}</td></tr>`; // Added history error message
                 }
             } else {
                  // දත්ත reload නොකළේ නම්, දැනට ගබඩා කර ඇති දත්ත පෙන්වන්න
@@ -827,6 +832,70 @@
             }
         }
         
+        // 6B. Withdrawal History Table එකට දත්ත ඇතුළු කරන ශ්‍රිතය
+        async function loadWithdrawalHistory() {
+            const withdrawalHistoryTable = document.getElementById('withdrawal-history-list');
+            withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr>';
+            
+            try {
+                // Approved හෝ Rejected (Cancelled) තත්ත්වයේ ඇති සියලුම transactions ලබා ගනී
+                const historySnapshot = await db.collection('transactions') 
+                                                   .where('type', '==', 'withdrawal')
+                                                   .where('status', 'in', ['Completed', 'Cancelled']) // Approved (Completed) සහ Rejected (Cancelled)
+                                                   .orderBy('adminActionTime', 'desc') // Action ගත් දිනය අනුව අලුත්ම දේ මුලට
+                                                   .limit(50) // ඉතිහාසයේ අවසන් 50 පෙන්වීමට
+                                                   .get();
+                
+                const history = historySnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    createdAt: doc.data().timestamp // withdrawal.html එකේ timestamp භාවිතා කරයි
+                }));
+                
+                withdrawalHistoryTable.innerHTML = ''; 
+                
+                if (history.length === 0) {
+                    withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No withdrawal history found.</td></tr>';
+                } else {
+                    history.forEach(request => {
+                        const requestDateTime = formatFirebaseTimestamp(request.timestamp); 
+                        const actionDateTime = formatFirebaseTimestamp(request.adminActionTime);
+                        const user = allUsersData.find(u => u.id === request.uid);
+                        const userEmail = user ? user.email : 'N/A';
+                        
+                        let statusColor = '';
+                        let statusText = request.status;
+                        
+                        if (request.status === 'Completed') {
+                            statusColor = 'var(--success-color)';
+                            statusText = 'Approved';
+                        } else if (request.status === 'Cancelled') {
+                            statusColor = 'var(--danger-color)';
+                            statusText = 'Rejected';
+                        }
+                        
+                        const row = withdrawalHistoryTable.insertRow();
+                        row.innerHTML = `
+                            <td>${request.id.substring(0, 8)}...</td>
+                            <td>${userEmail}<br><small style="color:#999;font-size:10px;">UID: ${request.uid.substring(0, 8)}...</small></td>
+                            <td>${(request.amount || 0).toFixed(4)} XRP</td>
+                            <td>${(request.fee || 0).toFixed(4)} XRP</td>
+                            <td>${requestDateTime}</td> 
+                            <td>${actionDateTime}</td> 
+                            <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
+                            <td><span style="color:${statusColor};font-weight:700;">${statusText}</span></td>
+                            <td>Admin</td>
+                        `;
+                    });
+                }
+                
+            } catch (error) {
+                console.error("Error loading withdrawal history:", error);
+                withdrawalHistoryTable.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading history: ${error.message}</td></tr>`;
+            }
+        } // 👈 loadWithdrawalHistory ශ්‍රිතය loadDashboardData ට පසුව නිවැරදිව අවසන් වේ.
+
+
         // 7. Search Users Function
         function searchUsers() {
             const searchInput = document.getElementById('user-search-input').value.toLowerCase().trim();
@@ -846,76 +915,76 @@
         }
 
         // 8. Withdrawal Handling Function (Fixed for Firestore Transaction Error)
-async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
-    if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
-        return;
-    }
-    
-    // withdrawal.html එකෙන් නියම කර ඇති Fee එක භාවිතා කරයි
-    const WITHDRAWAL_FEE = 0.05; 
-    // Refund කිරීම සඳහා amount + fee එක සම්පූර්ණයෙන්ම එකතු කළ යුතුය 
-    const totalRefundAmount = amount + WITHDRAWAL_FEE; 
-    
-    try {
-        await db.runTransaction(async (transaction) => {
-            
-            // --- 1. ALL READS (සියලුම කියවීම් මුලින්ම සිදු කරන්න) ---
-            // Note: withdrawal.html මගින් request එක යවන්නේ 'transactions' collection එකටයි.
-            const withdrawalRef = db.collection('transactions').doc(requestId); 
-            const userRef = db.collection('users').doc(userId);
-            
-            const withdrawalDoc = await transaction.get(withdrawalRef);
-            if (!withdrawalDoc.exists) {
-                 throw new Error("Withdrawal transaction record not found!");
+        async function handleWithdrawal(requestId, action, userId, amount, address, tag, userEmail) {
+            if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
+                return;
             }
             
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists) {
-                throw new Error("User document does not exist!");
-            }
+            // withdrawal.html එකෙන් නියම කර ඇති Fee එක භාවිතා කරයි
+            const WITHDRAWAL_FEE = 0.05; 
+            // Refund කිරීම සඳහා amount + fee එක සම්පූර්ණයෙන්ම එකතු කළ යුතුය 
+            const totalRefundAmount = amount + WITHDRAWAL_FEE; 
             
-            // අවශ්‍ය දත්ත ලබා ගැනීම
-            const currentBalance = userDoc.data().balance || 0;
-            const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
+            try {
+                await db.runTransaction(async (transaction) => {
+                    
+                    // --- 1. ALL READS (සියලුම කියවීම් මුලින්ම සිදු කරන්න) ---
+                    // Note: withdrawal.html මගින් request එක යවන්නේ 'transactions' collection එකටයි.
+                    const withdrawalRef = db.collection('transactions').doc(requestId); 
+                    const userRef = db.collection('users').doc(userId);
+                    
+                    const withdrawalDoc = await transaction.get(withdrawalRef);
+                    if (!withdrawalDoc.exists) {
+                         throw new Error("Withdrawal transaction record not found!");
+                    }
+                    
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists) {
+                        throw new Error("User document does not exist!");
+                    }
+                    
+                    // අවශ්‍ය දත්ත ලබා ගැනීම
+                    const currentBalance = userDoc.data().balance || 0;
+                    const transactionStatus = action === 'Approved' ? 'Completed' : 'Cancelled'; 
 
-            
-            // --- 2. ALL WRITES (සියලුම ලිවීම් ඉන් පසුව සිදු කරන්න) ---
-            
-            // A. Withdrawal Record Update:
-            // withdrawal record එකේ status එක update කිරීම
-            transaction.update(withdrawalRef, {
-                status: transactionStatus, 
-                adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
-            });
+                    
+                    // --- 2. ALL WRITES (සියලුම ලිවීම් ඉන් පසුව සිදු කරන්න) ---
+                    
+                    // A. Withdrawal Record Update:
+                    // withdrawal record එකේ status එක update කිරීම
+                    transaction.update(withdrawalRef, {
+                        status: transactionStatus, 
+                        adminActionTime: firebase.firestore.FieldValue.serverTimestamp()
+                    });
 
-            // B. User Balance Update:
-            if (action === 'Rejected') {
-                // Rejected නම්, කපා හැරූ සම්පූර්ණ මුදල (amount + fee) නැවත user ගිණුමට එකතු කරන්න.
-                
-                const newBalance = currentBalance + totalRefundAmount;
-                
-                transaction.update(userRef, {
-                    balance: newBalance
+                    // B. User Balance Update:
+                    if (action === 'Rejected') {
+                        // Rejected නම්, කපා හැරූ සම්පූර්ණ මුදල (amount + fee) නැවත user ගිණුමට එකතු කරන්න.
+                        
+                        const newBalance = currentBalance + totalRefundAmount;
+                        
+                        transaction.update(userRef, {
+                            balance: newBalance
+                        });
+                        
+                        alert(`Withdrawal Request ${requestId.substring(0, 8)}... has been Rejected/Cancelled. ${totalRefundAmount.toFixed(4)} XRP has been refunded.`);
+
+                    } else if (action === 'Approved') {
+                        // Approved නම්, කිසිදු ශේෂ වෙනසක් අවශ්‍ය නොවේ, මන්ද එය withdrawal.html හිදී 
+                        // user ගේ ගිණුමෙන් දැනටමත් කපා හැර ඇත.
+                        alert(`Withdrawal Request ${requestId.substring(0, 8)}... has been Approved/Completed. Balance already deducted at time of request.`);
+                    }
+                    
                 });
+
+                // දත්ත නැවත Load කරන්න 
+                loadDashboardData(true); 
                 
-                alert(`Withdrawal Request ${requestId.substring(0, 8)}... has been Rejected/Cancelled. ${totalRefundAmount.toFixed(4)} XRP has been refunded.`);
-
-            } else if (action === 'Approved') {
-                // Approved නම්, කිසිදු ශේෂ වෙනසක් අවශ්‍ය නොවේ, මන්ද එය withdrawal.html හිදී 
-                // user ගේ ගිණුමෙන් දැනටමත් කපා හැර ඇත.
-                alert(`Withdrawal Request ${requestId.substring(0, 8)}... has been Approved/Completed. Balance already deducted at time of request.`);
+            } catch (error) {
+                console.error(`Error handling withdrawal ${action}:`, error);
+                alert(`Failed to ${action} withdrawal: ` + error.message);
             }
-            
-        });
-
-        // දත්ත නැවත Load කරන්න 
-        loadDashboardData(true); 
-        
-    } catch (error) {
-        console.error(`Error handling withdrawal ${action}:`, error);
-        alert(`Failed to ${action} withdrawal: ` + error.message);
-    }
-}
+        }
 
 
         // 9. User Management Functions (No change)
@@ -1115,77 +1184,6 @@ async function handleWithdrawal(requestId, action, userId, amount, address, tag,
                 submitBtn.disabled = false;
             }
         });
-        // ... existing code in loadDashboardData, after B. Load Withdrawal Requests ...
-
-                    // --- C. Load Withdrawal History ---
-                    loadWithdrawalHistory(); // New function call
-                    
-                } catch (error) {
-// ... existing catch block ...
-
-                // 6B. Withdrawal History Table එකට දත්ත ඇතුළු කරන ශ්‍රිතය
-        async function loadWithdrawalHistory() {
-            const withdrawalHistoryTable = document.getElementById('withdrawal-history-list');
-            withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr>';
-            
-            try {
-                // Approved හෝ Rejected (Cancelled) තත්ත්වයේ ඇති සියලුම transactions ලබා ගනී
-                const historySnapshot = await db.collection('transactions') 
-                                                   .where('type', '==', 'withdrawal')
-                                                   .where('status', 'in', ['Completed', 'Cancelled']) // Approved (Completed) සහ Rejected (Cancelled)
-                                                   .orderBy('adminActionTime', 'desc') // Action ගත් දිනය අනුව අලුත්ම දේ මුලට
-                                                   .limit(50) // ඉතිහාසයේ අවසන් 50 පෙන්වීමට
-                                                   .get();
-                
-                const history = historySnapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data(),
-                    createdAt: doc.data().timestamp // withdrawal.html එකේ timestamp භාවිතා කරයි
-                }));
-                
-                withdrawalHistoryTable.innerHTML = ''; 
-                
-                if (history.length === 0) {
-                    withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No withdrawal history found.</td></tr>';
-                } else {
-                    history.forEach(request => {
-                        const requestDateTime = formatFirebaseTimestamp(request.timestamp); 
-                        const actionDateTime = formatFirebaseTimestamp(request.adminActionTime);
-                        const user = allUsersData.find(u => u.id === request.uid);
-                        const userEmail = user ? user.email : 'N/A';
-                        
-                        let statusColor = '';
-                        let statusText = request.status;
-                        
-                        if (request.status === 'Completed') {
-                            statusColor = 'var(--success-color)';
-                            statusText = 'Approved';
-                        } else if (request.status === 'Cancelled') {
-                            statusColor = 'var(--danger-color)';
-                            statusText = 'Rejected';
-                        }
-                        
-                        const row = withdrawalHistoryTable.insertRow();
-                        row.innerHTML = `
-                            <td>${request.id.substring(0, 8)}...</td>
-                            <td>${userEmail}<br><small style="color:#999;font-size:10px;">UID: ${request.uid.substring(0, 8)}...</small></td>
-                            <td>${(request.amount || 0).toFixed(4)} XRP</td>
-                            <td>${(request.fee || 0).toFixed(4)} XRP</td>
-                            <td>${requestDateTime}</td> 
-                            <td>${actionDateTime}</td> 
-                            <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
-                            <td><span style="color:${statusColor};font-weight:700;">${statusText}</span></td>
-                            <td>Admin</td>
-                        `;
-                    });
-                }
-                
-            } catch (error) {
-                console.error("Error loading withdrawal history:", error);
-                withdrawalHistoryTable.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading history: ${error.message}</td></tr>`;
-            }
-        }
-
     </script>
 
 </body>
