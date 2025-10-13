@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRP Mine Pro - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #121212; color: #eeeeee; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        h1 { color: #ff9800; border-bottom: 2px solid #03a9f4; padding-bottom: 10px; }
+        .plan-section { background-color: #212121; padding: 20px; border-radius: 10px; margin-bottom: 30px; border-left: 5px solid #4CAF50; }
+        .plan-section h2 { color: #03a9f4; margin-top: 0; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #bbbbbb; }
+        .input-group input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #333; background-color: #1a1a1a; color: white; border-radius: 5px; }
+        .save-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        .save-btn:hover { background-color: #388e3c; }
+        .message { margin-top: 20px; padding: 10px; border-radius: 5px; font-weight: 600; }
+        .success { background-color: #388e3c; color: white; }
+        .error { background-color: #d32f2f; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>XRP Mine Pro - Admin Plan Configuration</h1>
+        <p>⚠️ සටහන: මෙම පිටුව පරිපාලකයන්ට පමණක් සීමා විය යුතුය. සැබෑ නිෂ්පාදනයකදී (Production) ආරක්ෂක නීති (Security Rules) යොදන්න.</p>
+
+        <div id="plans-container">
+            </div>
+
+        <button onclick="document.location.href='dashboard.html'" class="save-btn" style="background-color: #ff9800;">Go to Dashboard</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // ⚠️ ඔබගේ Firebase Config එක මෙහි තිබිය යුතුය.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4", // replace with your key
+            authDomain: "xrp-mine-pro.firebaseapp.com",
+            projectId: "xrp-mine-pro",
+            storageBucket: "xrp-mine-pro.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); 
+
+        const planIds = ['free', 'bronze', 'silver', 'gold'];
+
+        // ----------------------------------------------------
+        // 1. Firebase වෙතින් සැලසුම් දත්ත ලබාගෙන UI වෙත පූරණය කිරීම
+        // ----------------------------------------------------
+        async function loadPlans() {
+            const container = document.getElementById('plans-container');
+            container.innerHTML = ''; // පැරණි දත්ත ඉවත් කිරීම
+
+            try {
+                const plansSnapshot = await db.collection("plans").get();
+                const plansData = {};
+                plansSnapshot.forEach(doc => {
+                    plansData[doc.id] = doc.data();
+                });
+                
+                planIds.forEach(id => {
+                    const plan = plansData[id] || {};
+
+                    const html = `
+                        <div class="plan-section">
+                            <h2>${id.toUpperCase()} PLAN</h2>
+                            <div class="input-group">
+                                <label for="${id}-hashRate">Hash Rate (MH/s):</label>
+                                <input type="number" id="${id}-hashRate" value="${plan.hashRate || 0.00}" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label for="${id}-price">Price ($):</label>
+                                <input type="number" id="${id}-price" value="${plan.price || 0.00}" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label for="${id}-durationDays">Duration (Days):</label>
+                                <input type="number" id="${id}-durationDays" value="${plan.durationDays || 0}" step="1">
+                            </div>
+                            <div class="input-group">
+                                <label for="${id}-fullEarningXRP">Full Earning (XRP):</label>
+                                <input type="number" id="${id}-fullEarningXRP" value="${plan.fullEarningXRP || 0.00}" step="0.01">
+                            </div>
+                            <button class="save-btn" onclick="savePlan('${id}')">Save ${id.toUpperCase()}</button>
+                            <div id="${id}-message" class="message" style="display: none;"></div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
+
+            } catch (error) {
+                console.error("Error loading plans:", error);
+                container.innerHTML = `<div class="error">Error loading plans: ${error.message}</div>`;
+            }
+        }
+
+        // ----------------------------------------------------
+        // 2. වෙනස් කළ සැලසුම් දත්ත Firebase වෙත යැවීම
+        // ----------------------------------------------------
+        async function savePlan(planId) {
+            const messageElement = document.getElementById(`${planId}-message`);
+            messageElement.style.display = 'none';
+
+            const hashRate = parseFloat(document.getElementById(`${planId}-hashRate`).value);
+            const price = parseFloat(document.getElementById(`${planId}-price`).value);
+            const durationDays = parseInt(document.getElementById(`${planId}-durationDays`).value);
+            const fullEarningXRP = parseFloat(document.getElementById(`${planId}-fullEarningXRP`).value);
+
+            if (isNaN(hashRate) || isNaN(price) || isNaN(durationDays) || isNaN(fullEarningXRP)) {
+                messageElement.className = 'message error';
+                messageElement.textContent = 'Please enter valid numbers for all fields.';
+                messageElement.style.display = 'block';
+                return;
+            }
+
+            try {
+                await db.collection("plans").doc(planId).set({
+                    hashRate: hashRate,
+                    price: price,
+                    durationDays: durationDays,
+                    fullEarningXRP: fullEarningXRP
+                });
+
+                messageElement.className = 'message success';
+                messageElement.textContent = `${planId.toUpperCase()} Plan saved successfully!`;
+                messageElement.style.display = 'block';
+                
+                // තත්පර 3 කට පසු පණිවිඩය ඉවත් කිරීම
+                setTimeout(() => { messageElement.style.display = 'none'; }, 3000);
+
+            } catch (error) {
+                console.error("Error saving plan:", error);
+                messageElement.className = 'message error';
+                messageElement.textContent = `Error saving: ${error.message}`;
+                messageElement.style.display = 'block';
+            }
+        }
+
+        // පිටුව පූරණය වූ විට දත්ත පූරණය කිරීම
+        window.onload = loadPlans;
+    </script>
+</body>
+</html>
