@@ -460,7 +460,8 @@
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times; Close</a>
         <a href="#"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="#user-list-section"><i class="fas fa-users"></i> Users</a>
-        <a href="#withdrawal-section"><i class="fas fa-money-check-alt"></i> Withdrawals</a>
+        <a href="history.html"><i class="fas fa-history"></i> Withdrawal History (Approved/Rejected)</a>
+
         <a href="#register-user-section"><i class="fas fa-user-plus"></i> Register New User (Add User)</a>
         <a href="#" class="logout-link" id="logout-btn-sidenav"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
@@ -541,27 +542,6 @@
             </table>
         </div>
         
-        <h2 id="withdrawal-history-section"><i class="fas fa-history"></i> Withdrawal History (Approved/Rejected)</h2>
-        <div class="table-responsive">
-            <table class="data-table withdrawal-table">
-                <thead>
-                    <tr>
-                        <th>ID</th> 
-                        <th>Email / UID</th>
-                        <th>XRP Amount</th>
-                        <th>Fee</th> 
-                        <th>Request Date/Time</th> 
-                        <th>Action Date/Time</th> 
-                        <th>Wallet Address</th>
-                        <th>Status</th>
-                        <th>Admin</th>
-                    </tr>
-                </thead>
-                <tbody id="withdrawal-history-list">
-                    <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr> 
-                </tbody>
-            </table>
-        </div>
         <h2 id="user-list-section"><i class="fas fa-users"></i> All Users</h2>
         
         <div class="search-container">
@@ -739,8 +719,7 @@
                 document.getElementById('active-plans').className = 'loading-skeleton';
                 document.getElementById('user-list').innerHTML = '<tr><td colspan="11" style="text-align: center;" class="loading-text">Loading users...</td></tr>';
                 document.getElementById('withdrawal-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading requests...</td></tr>';
-                document.getElementById('withdrawal-history-list').innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr>'; // Added history loading indicator
-
+                
                 try {
                     // --- A. Load User Data from Firestore ---
                     const usersSnapshot = await db.collection('users').get();
@@ -824,76 +803,14 @@
                     console.error("Error loading dashboard data:", error);
                     document.getElementById('user-list').innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--danger-color);">Error loading users: ${error.message}</td></tr>`;
                     document.getElementById('withdrawal-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading requests: ${error.message}</td></tr>`;
-                    document.getElementById('withdrawal-history-list').innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading history: ${error.message}</td></tr>`; // Added history error message
-                }
+                               }
             } else {
                  // දත්ත reload නොකළේ නම්, දැනට ගබඩා කර ඇති දත්ත පෙන්වන්න
                  populateUserList(allUsersData);
             }
         }
         
-        // 6B. Withdrawal History Table එකට දත්ත ඇතුළු කරන ශ්‍රිතය
-        async function loadWithdrawalHistory() {
-            const withdrawalHistoryTable = document.getElementById('withdrawal-history-list');
-            withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr>';
-            
-            try {
-                // Approved හෝ Rejected (Cancelled) තත්ත්වයේ ඇති සියලුම transactions ලබා ගනී
-                const historySnapshot = await db.collection('transactions') 
-                                                   .where('type', '==', 'withdrawal')
-                                                   .where('status', 'in', ['Completed', 'Cancelled']) // Approved (Completed) සහ Rejected (Cancelled)
-                                                   .orderBy('adminActionTime', 'desc') // Action ගත් දිනය අනුව අලුත්ම දේ මුලට
-                                                   .limit(50) // ඉතිහාසයේ අවසන් 50 පෙන්වීමට
-                                                   .get();
-                
-                const history = historySnapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data(),
-                    createdAt: doc.data().timestamp // withdrawal.html එකේ timestamp භාවිතා කරයි
-                }));
-                
-                withdrawalHistoryTable.innerHTML = ''; 
-                
-                if (history.length === 0) {
-                    withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No withdrawal history found.</td></tr>';
-                } else {
-                    history.forEach(request => {
-                        const requestDateTime = formatFirebaseTimestamp(request.timestamp); 
-                        const actionDateTime = formatFirebaseTimestamp(request.adminActionTime);
-                        const user = allUsersData.find(u => u.id === request.uid);
-                        const userEmail = user ? user.email : 'N/A';
-                        
-                        let statusColor = '';
-                        let statusText = request.status;
-                        
-                        if (request.status === 'Completed') {
-                            statusColor = 'var(--success-color)';
-                            statusText = 'Approved';
-                        } else if (request.status === 'Cancelled') {
-                            statusColor = 'var(--danger-color)';
-                            statusText = 'Rejected';
-                        }
-                        
-                        const row = withdrawalHistoryTable.insertRow();
-                        row.innerHTML = `
-                            <td>${request.id.substring(0, 8)}...</td>
-                            <td>${userEmail}<br><small style="color:#999;font-size:10px;">UID: ${request.uid.substring(0, 8)}...</small></td>
-                            <td>${(request.amount || 0).toFixed(4)} XRP</td>
-                            <td>${(request.fee || 0).toFixed(4)} XRP</td>
-                            <td>${requestDateTime}</td> 
-                            <td>${actionDateTime}</td> 
-                            <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
-                            <td><span style="color:${statusColor};font-weight:700;">${statusText}</span></td>
-                            <td>Admin</td>
-                        `;
-                    });
-                }
-                
-            } catch (error) {
-                console.error("Error loading withdrawal history:", error);
-                withdrawalHistoryTable.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading history: ${error.message}</td></tr>`;
-            }
-        } // 👈 loadWithdrawalHistory ශ්‍රිතය loadDashboardData ට පසුව නිවැරදිව අවසන් වේ.
+      
 
 
         // 7. Search Users Function

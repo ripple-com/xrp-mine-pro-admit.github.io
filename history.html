@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📜 Withdrawal History - XRP Mine Pro Admin</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* Shared Styles (Copied from admin_dashboard.html) */
+        :root {
+            --admin-color: #f44336;       
+            --card-bg: #1c1c1c;           
+            --bg-color: #121212;          
+            --text-color: #f0f0f0;        
+            --primary-color: #03a9f4;     
+            --secondary-color: #e0e0e0;   
+            --success-color: #4CAF50;     
+            --danger-color: #f44336;      
+            --border-color: #333;         
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .header {
+            background-color: var(--card-bg); 
+            border-bottom: 3px solid var(--primary-color);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        /* Side Menu CSS */
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1001;
+            top: 0;
+            right: 0;
+            background-color: #2a2a2a; 
+            overflow-x: hidden;
+            transition: 0.3s;
+            padding-top: 60px;
+            box-shadow: -8px 0 20px rgba(0, 0, 0, 0.7);
+        }
+
+        .sidenav a {
+            padding: 18px 25px;
+            text-decoration: none;
+            font-size: 17px;
+            color: var(--secondary-color);
+            display: block;
+            transition: 0.3s;
+            font-weight: 600;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        .sidenav a:hover {
+            background-color: #3d3d3d;
+            color: var(--primary-color);
+        }
+        
+        .sidenav a i {
+            margin-right: 15px;
+            color: var(--admin-color);
+        }
+        
+        .menu-btn {
+            background-color: transparent;
+            color: white;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .menu-btn:hover {
+            color: var(--primary-color);
+            transform: rotate(90deg);
+        }
+        
+        .sidenav .logout-link {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--danger-color);
+            color: white;
+            text-align: center;
+        }
+        
+        .sidenav .logout-link:hover {
+            background-color: #ff3333;
+        }
+
+        /* Main Content */
+        .container {
+            padding: 30px;
+            max-width: 1400px; 
+            margin: auto;
+        }
+        
+        h2 {
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+            padding-bottom: 5px;
+            margin-top: 50px;
+            color: var(--text-color);
+            font-weight: 700;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: separate; 
+            border-spacing: 0;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden; 
+        }
+
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .data-table th {
+            background-color: #2a2a2a;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table td {
+            background-color: var(--card-bg);
+            color: var(--secondary-color);
+            font-size: 14px;
+        }
+
+        .data-table tr:hover td {
+            background-color: #242424;
+        }
+        
+        .loading-text {
+            color: var(--primary-color);
+            font-style: italic;
+        }
+        
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .table-responsive {
+                overflow-x: auto;
+            }
+            .data-table {
+                min-width: 900px; 
+            }
+            .data-table th, .data-table td {
+                padding: 10px 5px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times; Close</a>
+        <a href="admin_dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a> 
+        <a href="#withdrawal-history-section"><i class="fas fa-history"></i> Approved/Rejected History</a>
+        <a href="#" class="logout-link" id="logout-btn-sidenav"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <div class="header">
+        <h1><i class="fas fa-lock" style="color: var(--admin-color);"></i> Admin History</h1>
+        <button class="menu-btn" onclick="openNav()"><i class="fas fa-bars"></i></button>
+    </div>
+
+    <div class="container">
+        
+        <h2 id="withdrawal-history-section"><i class="fas fa-history"></i> Withdrawal History (Approved/Rejected)</h2>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th> 
+                        <th>Email / UID</th>
+                        <th>XRP Amount</th>
+                        <th>Fee</th> 
+                        <th>Request Date/Time</th> 
+                        <th>Action Date/Time</th> 
+                        <th>Wallet Address</th>
+                        <th>Status</th>
+                        <th>Admin</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawal-history-list">
+                    <tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr> 
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    
+    <script>
+        // ⚠️ ඔබගේ Firebase Config මෙහිදී යාවත්කාලීන කරන්න.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
+            authDomain: "xrp-mine-pro.firebaseapp.com",
+            projectId: "xrp-mine-pro",
+            storageBucket: "xrp-mine-pro.appspot.com",
+            messagingSenderId: "424665736685",
+            appId: "1:424665736685:web:21ba6c17e4d395a72933e3" 
+        };
+        
+        // 1. Firebase Initialization
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        let allUsersData = []; // History එක සඳහා user details අවශ්‍ය බැවින් මෙය තබා ගනී.
+
+        // ⚠️ ඔබගේ පරිපාලක Email ලිපින මෙහි ඇතුළත් කරන්න.
+        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com", "admin@xrpminepro.com"]; 
+        const ADMIN_LOGIN_PAGE = 'admin_login.html'; 
+
+        // --- Side Menu JavaScript ---
+        function openNav() {
+          document.getElementById("mySidenav").style.width = "250px";
+        }
+
+        function closeNav() {
+          document.getElementById("mySidenav").style.width = "0";
+        }
+
+        // 2. Auth Guard: Admin Check
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = ADMIN_LOGIN_PAGE; 
+                return;
+            }
+
+            if (!ALLOWED_ADMIN_EMAILS.includes(user.email)) {
+                alert("Access Denied. Not an authorized admin.");
+                await auth.signOut();
+                window.location.href = ADMIN_LOGIN_PAGE;
+                return;
+            }
+
+            // මුලින්ම සියලුම usersලා load කර History එක load කරන්න
+            await loadAllUsersForHistory();
+            loadWithdrawalHistory();
+        });
+
+        // 3. Logout Functionality
+        document.getElementById('logout-btn-sidenav').addEventListener('click', async (e) => {
+            e.preventDefault(); 
+            await auth.signOut();
+            window.location.href = ADMIN_LOGIN_PAGE;
+        });
+        
+        // 4. Time Formatting Function (Copied)
+        function formatFirebaseTimestamp(timestamp) {
+            if (!timestamp || !timestamp.toDate) return 'N/A';
+            const date = timestamp.toDate();
+            // Format: YYYY/MM/DD, HH:MM:SS
+            return date.toLocaleString('en-GB', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false 
+            }).replace(',', ''); 
+        }
+
+        // 5. History සඳහා පමණක් User Data Load කිරීම
+        async function loadAllUsersForHistory() {
+             try {
+                const usersSnapshot = await db.collection('users').get();
+                allUsersData = usersSnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    email: doc.data().email,
+                    ...doc.data() 
+                }));
+             } catch (error) {
+                 console.error("Error loading all user data for history:", error);
+                 // දෝෂයක් වුවත්, history load කිරීමට ඉදිරියට යන්න
+                 allUsersData = []; 
+             }
+        }
+
+        // 6. Withdrawal History Table එකට දත්ත ඇතුළු කරන ශ්‍රිතය (Copied & Adapted)
+        async function loadWithdrawalHistory() {
+            const withdrawalHistoryTable = document.getElementById('withdrawal-history-list');
+            withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;" class="loading-text">Loading history...</td></tr>';
+            
+            try {
+                // Approved හෝ Rejected (Cancelled) තත්ත්වයේ ඇති සියලුම transactions ලබා ගනී
+                const historySnapshot = await db.collection('transactions') 
+                                                   .where('type', '==', 'withdrawal')
+                                                   .where('status', 'in', ['Completed', 'Cancelled']) // Approved (Completed) සහ Rejected (Cancelled)
+                                                   .orderBy('adminActionTime', 'desc') // Action ගත් දිනය අනුව අලුත්ම දේ මුලට
+                                                   .limit(100) // ඉතිහාසයේ අවසන් 100 පෙන්වීමට
+                                                   .get();
+                
+                const history = historySnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data(),
+                    createdAt: doc.data().timestamp 
+                }));
+                
+                withdrawalHistoryTable.innerHTML = ''; 
+                
+                if (history.length === 0) {
+                    withdrawalHistoryTable.innerHTML = '<tr><td colspan="9" style="text-align: center;">No withdrawal history found.</td></tr>';
+                } else {
+                    history.forEach(request => {
+                        const requestDateTime = formatFirebaseTimestamp(request.timestamp); 
+                        const actionDateTime = formatFirebaseTimestamp(request.adminActionTime);
+                        const user = allUsersData.find(u => u.id === request.uid);
+                        const userEmail = user ? user.email : 'N/A';
+                        
+                        let statusColor = '';
+                        let statusText = request.status;
+                        
+                        if (request.status === 'Completed') {
+                            statusColor = 'var(--success-color)';
+                            statusText = 'Approved';
+                        } else if (request.status === 'Cancelled') {
+                            statusColor = 'var(--danger-color)';
+                            statusText = 'Rejected';
+                        }
+                        
+                        const row = withdrawalHistoryTable.insertRow();
+                        row.innerHTML = `
+                            <td>${request.id.substring(0, 8)}...</td>
+                            <td>${userEmail}<br><small style="color:#999;font-size:10px;">UID: ${request.uid.substring(0, 8)}...</small></td>
+                            <td>${(request.amount || 0).toFixed(4)} XRP</td>
+                            <td>${(request.fee || 0).toFixed(4)} XRP</td>
+                            <td>${requestDateTime}</td> 
+                            <td>${actionDateTime}</td> 
+                            <td>${request.address ? request.address.substring(0, 15) + '...' : 'N/A'}</td>
+                            <td><span style="color:${statusColor};font-weight:700;">${statusText}</span></td>
+                            <td>Admin</td>
+                        `;
+                    });
+                }
+                
+            } catch (error) {
+                console.error("Error loading withdrawal history:", error);
+                withdrawalHistoryTable.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--danger-color);">Error loading history: ${error.message}</td></tr>`;
+            }
+        } 
+    </script>
+
+</body>
+</html>
