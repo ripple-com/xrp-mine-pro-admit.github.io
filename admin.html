@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XRP Mine Pro - Admin Panel</title>
+    <title>XRP Mine Pro - Admin Plan Configuration</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #121212; color: #eeeeee; padding: 20px; }
@@ -14,7 +14,7 @@
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #bbbbbb; }
         .input-group input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #333; background-color: #1a1a1a; color: white; border-radius: 5px; }
-        .save-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        .save-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; margin-right: 10px;}
         .save-btn:hover { background-color: #388e3c; }
         .message { margin-top: 20px; padding: 10px; border-radius: 5px; font-weight: 600; }
         .success { background-color: #388e3c; color: white; }
@@ -27,9 +27,11 @@
         <p>⚠️ සටහන: මෙම පිටුව පරිපාලකයන්ට පමණක් සීමා විය යුතුය. සැබෑ නිෂ්පාදනයකදී (Production) ආරක්ෂක නීති (Security Rules) යොදන්න.</p>
 
         <div id="plans-container">
-            </div>
+            <div class="error">Loading Admin session...</div>
+        </div>
 
-        <button onclick="document.location.href='dashboard.html'" class="save-btn" style="background-color: #ff9800;">Go to Dashboard</button>
+        <button onclick="document.location.href='admin_dashboard.html'" class="save-btn" style="background-color: #ff9800;">Go to Dashboard</button>
+        <button id="logout-btn" class="save-btn" style="background-color: #d32f2f;">Logout</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -37,9 +39,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
     <script>
-        // ⚠️ ඔබගේ Firebase Config එක මෙහි තිබිය යුතුය.
+        // ⚠️ ඔබගේ Firebase Config එක මෙහි තිබිය යුතුය. (admin_dashboard.html හි ඇති ලෙසම)
         const firebaseConfig = {
-            apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4", // replace with your key
+            apiKey: "AIzaSyBsTIzaJtaGiAfv4a69o80f0QvKiq6lFj4",
             authDomain: "xrp-mine-pro.firebaseapp.com",
             projectId: "xrp-mine-pro",
             storageBucket: "xrp-mine-pro.appspot.com",
@@ -48,18 +50,58 @@
         };
         
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.firestore(); 
 
         const planIds = ['free', 'bronze', 'silver', 'gold'];
+        
+        // ⚠️ ඔබගේ පරිපාලක Email ලිපින මෙහි ඇතුළත් කරන්න. (admin_dashboard.html හි ඇති ලෙසම)
+        const ALLOWED_ADMIN_EMAILS = ["admin@xrpminepro.com"]; 
+        const ADMIN_LOGIN_PAGE = 'admin_login.html'; 
+
+        // ----------------------------------------------------
+        // A. Auth Guard: Admin Check (ප්‍රධාන වෙනස)
+        // ----------------------------------------------------
+        auth.onAuthStateChanged(async (user) => {
+            const plansContainer = document.getElementById('plans-container');
+            
+            if (!user) {
+                // පරිශීලකයෙක් ලොග් වී නැත්නම්, Login පිටුවට යොමු කරන්න.
+                window.location.href = ADMIN_LOGIN_PAGE; 
+                return;
+            }
+
+            // ඔබගේ admin@xrpminepro.com ඊමේල් එක භාවිත කරමින් පරිපාලක පරීක්ෂාව
+            if (!ALLOWED_ADMIN_EMAILS.includes(user.email)) {
+                // ලොග් වී සිටියද Admin නොවේ නම්, ප්‍රවේශය ප්‍රතික්ෂේප කරන්න.
+                plansContainer.innerHTML = `<div class="error">Access Denied: Not an authorized admin.</div>`;
+                await auth.signOut();
+                window.location.href = ADMIN_LOGIN_PAGE;
+                return;
+            }
+
+            // Admin ලෙස නිවැරදිව ලොග් වී සිටින්නේ නම් පමණක්, දත්ත පූරණය කරන්න.
+            loadPlans(); 
+        });
+        
+        // ----------------------------------------------------
+        // B. Logout Functionality
+        // ----------------------------------------------------
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await auth.signOut();
+            window.location.href = ADMIN_LOGIN_PAGE;
+        });
+
 
         // ----------------------------------------------------
         // 1. Firebase වෙතින් සැලසුම් දත්ත ලබාගෙන UI වෙත පූරණය කිරීම
         // ----------------------------------------------------
         async function loadPlans() {
             const container = document.getElementById('plans-container');
-            container.innerHTML = ''; // පැරණි දත්ත ඉවත් කිරීම
+            container.innerHTML = ''; 
 
             try {
+                // Security Rules වලට අනුව, Adminට පමණක් මෙය කියවීමට හැකි විය යුතුය.
                 const plansSnapshot = await db.collection("plans").get();
                 const plansData = {};
                 plansSnapshot.forEach(doc => {
@@ -97,7 +139,8 @@
 
             } catch (error) {
                 console.error("Error loading plans:", error);
-                container.innerHTML = `<div class="error">Error loading plans: ${error.message}</div>`;
+                // "Missing or insufficient permissions" දෝෂය මෙහිදී අල්ලා ගනී.
+                container.innerHTML = `<div class="error">Error loading plans: Missing or insufficient permissions. (Code Error: ${error.message})</div>`;
             }
         }
 
@@ -121,6 +164,7 @@
             }
 
             try {
+                // Security Rules වලට අනුව, Adminට පමණක් මෙය ලිවීමට (set) හැකි විය යුතුය.
                 await db.collection("plans").doc(planId).set({
                     hashRate: hashRate,
                     price: price,
@@ -132,7 +176,6 @@
                 messageElement.textContent = `${planId.toUpperCase()} Plan saved successfully!`;
                 messageElement.style.display = 'block';
                 
-                // තත්පර 3 කට පසු පණිවිඩය ඉවත් කිරීම
                 setTimeout(() => { messageElement.style.display = 'none'; }, 3000);
 
             } catch (error) {
@@ -142,9 +185,9 @@
                 messageElement.style.display = 'block';
             }
         }
-
-        // පිටුව පූරණය වූ විට දත්ත පූරණය කිරීම
-        window.onload = loadPlans;
+        
+        // ⚠️ window.onload = loadPlans; ඉවත් කර ඇත. 
+        // Auth Guard එක තුළින් loadPlans කැඳවනු ලැබේ.
     </script>
 </body>
 </html>
